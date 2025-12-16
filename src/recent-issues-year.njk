@@ -1,0 +1,171 @@
+---
+layout: base.njk
+pagination:
+  data: issues
+  size: 1
+  alias: year
+permalink: /recent-issues/{{ year }}/
+templateEngineOverride: njk,html
+---
+{%- set years = issues | keys | sortYearsDesc -%}
+{%- set yearIssues = issues[year] | sort(false, false, "numerical_month") | reverse -%}
+
+<h1>Recent Issues</h1>
+<div class="instruction-text">Click on the volume/year and the corresponding issue you wish to view.</div>
+<hr>
+
+<div class="year-navigation">
+{%- for y in years -%}
+  <span class="year-item"><a class="year-button{% if y == year %} active{% endif %}" href="/recent-issues/{{ y }}/">{{ y }}</a>{% if not loop.last %}<span class="year-separator">|</span>{% endif %}</span>
+{%- endfor -%}
+</div>
+
+<h2>Issues of Year: {{ year }}</h2>
+{% include "components/issue-year.njk" %}
+
+<style>
+  .instruction-text {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+  
+  hr {
+    margin: 1rem 0;
+    border: 0;
+    border-top: 1px solid #ccc;
+  }
+  
+  .hidden {
+    display: none;
+  }
+  
+  /* Issues grid layout */
+  .issues-grid {
+    display: flex;
+    flex-wrap: wrap;
+    margin: -10px;
+  }
+  
+  .issue-container {
+    width: calc(20% - 20px);
+    margin: 10px;
+    box-sizing: border-box;
+  }
+  
+  .issue-box {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+    transition: all 0.2s;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .issue-link:hover .issue-box {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+  
+  .issue-cover {
+    position: relative;
+    padding-top: 140%; /* 7:10 aspect ratio */
+    background-color: #f8f8f8;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .issue-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    margin: 0 !important; /* Override other margins */
+  }
+  
+  .issue-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+    pointer-events: none; /* Allows clicks to go through to the link */
+  }
+  
+  .issue-volume {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .issue-number {
+    font-size: 14px;
+  }
+  
+  .issue-text {
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    color: #333;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .new-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 35px;
+    height: auto;
+    z-index: 2;
+  }
+  
+  /* Responsive adjustments for issues grid */
+  @media (max-width: 1200px) {
+    .issue-container {
+      width: calc(25% - 20px);
+    }
+  }
+  
+  @media (max-width: 900px) {
+    .issue-container {
+      width: calc(33.333% - 20px);
+    }
+  }
+  
+  @media (max-width: 600px) {
+    .issue-container {
+      width: calc(50% - 20px);
+    }
+  }
+  
+  @media (max-width: 400px) {
+    .issue-container {
+      width: 100%;
+    }
+  }
+
+  .error-message {
+    padding: 20px;
+    background-color: #fff3f3;
+    border: 1px solid #ffcaca;
+    border-radius: 4px;
+    text-align: center;
+    color: #d63030;
+  }
+  
+  .loading {
+    text-align: center;
+    padding: 20px;
+  }
+</style>

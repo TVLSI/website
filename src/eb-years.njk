@@ -1,0 +1,9 @@
+---
+pagination:
+  data: editorialBoard
+  size: 1
+  alias: year
+permalink: /eb-years/{{ year }}.html
+---
+{% set yearData = editorialBoard[year] %}
+{% include "components/editorial-year.njk" %}

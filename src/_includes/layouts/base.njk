@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-HXZNFCXCEE"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-HXZNFCXCEE');
+  </script>
+  <title>{% if title %}{{ title }}{% endif %}</title>
+  <meta name="description" content="{{ description or 'IEEE Transactions On Very Large Scale Integration (VLSI) Systems' }}">
+  <meta name="keywords" content="{{ keywords or 'TVLSI, IEEE, Solid-State, Circuits, Systems, Society, microelectronic, wafer, multichip, computing' }}">
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="stylesheet" href="/css/nav.css">
+  <link rel="stylesheet" href="/css/person-grid.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div id="container">
+    <!-- Header goes inside the container -->
+    {% include "partials/header.njk" %}
+    
+    <!-- Navigation goes inside the container -->
+    {% include "partials/nav.njk" %}
+    
+    <div id="content">
+      <!-- Page content -->
+      {{ content | safe }}
+    </div>
+    
+    <!-- Footer goes inside the container -->
+    {% include "partials/footer.njk" %}
+  </div>
+  <script src="/js/person-modal.js"></script>
+</body>
+</html>

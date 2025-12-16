@@ -1,0 +1,23 @@
+{
+  "name": "tvlsi-website",
+  "version": "1.0.0",
+  "description": "IEEE TVLSI Website built with 11ty",
+  "main": "index.js",
+  "scripts": {
+    "prepare-data": "node ./scripts/prepare-data.js",
+    "prepare-sample": "node ./scripts/prepare-data.js --use-sample",
+    "clean": "node ./scripts/prepare-data.js --clean-only",
+    "build": "npm run prepare-data && eleventy",
+    "build:sample": "npm run prepare-sample && eleventy",
+    "serve": "npm run prepare-data && eleventy --serve",
+    "serve:sample": "npm run prepare-sample && eleventy --serve",
+    "start": "npm run serve"
+  },
+  "keywords": [],
+  "author": "jake1164@hotmail.com",
+  "license": "ISC",
+  "devDependencies": {
+    "@11ty/eleventy": "^3.0.0",
+    "dotenv": "^17.0.0"
+  }
+}

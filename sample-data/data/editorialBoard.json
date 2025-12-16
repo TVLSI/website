@@ -1,0 +1,416 @@
+{
+  "2021": {
+    "Title": "Editorial Board",
+    "Years": [
+      2021,
+      2022
+    ],
+    "Editor-in-Chief": [
+      {
+        "first_name": "Professor",
+        "last_name": "Moriarty",
+        "title": "Professor",
+        "img_src": "images/eb/moriarty.jpg",
+        "organizations": [
+          {
+            "name": "London Underground University",
+            "department": "Department of Advanced Schemes",
+            "url": null,
+            "location": "London, UK",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "prof.moriarty@example.com"
+        ],
+        "interests": [
+          "Theoretical criminal masterminding"
+        ]
+      }
+    ],
+    "Associate Editor-in-Chief": [
+      {
+        "first_name": "Mycroft",
+        "last_name": "Holmes",
+        "title": null,
+        "img_src": "images/eb/mycroft.jpg",
+        "organizations": [
+          {
+            "name": "British Government",
+            "department": "Government Affairs",
+            "url": null,
+            "location": "London, UK",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "mycroft@example.com"
+        ],
+        "interests": [
+          "Government affairs"
+        ]
+      }
+    ],
+    "Editorial Assistant": [
+      {
+        "first_name": "Lancelot",
+        "last_name": "Du Lac",
+        "title": "Sir",
+        "img_src": "images/eb/lancelot.jpg",
+        "organizations": [
+          {
+            "name": "Camelot",
+            "department": "Knightly Order",
+            "url": "https://www.camelot.kingdom",
+            "location": "Camelot",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "lancelot@example.com"
+        ],
+        "interests": [
+          "Chivalry"
+        ],
+        "homepage": "https://www.google.com/search?q=camelot+lancelot"
+      }
+    ],
+    "Associate Editors": [
+      {
+        "first_name": "Robin",
+        "last_name": "Hood",
+        "title": null,
+        "img_src": "images/eb/robin.jpg",
+        "organizations": [
+          {
+            "name": "Sherwood Guild",
+            "department": "Guild Leadership",
+            "url": null,
+            "location": "Nottingham",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "robin@example.com"
+        ],
+        "interests": [
+          "Archery",
+          "Redistribution of wealth"
+        ]
+      },
+      {
+        "first_name": "Long John",
+        "last_name": "Silver",
+        "title": null,
+        "img_src": "images/eb/silver.jpg",
+        "organizations": [
+          {
+            "name": "Pirate Council",
+            "department": "Pirate Leadership",
+            "url": null,
+            "location": "The High Seas",
+            "country": null
+          }
+        ],
+        "emails": [
+          "silver@example.com"
+        ],
+        "interests": [
+          "Treasure hunting"
+        ]
+      }
+    ]
+  },
+  "2023": {
+    "Title": "Editorial Board",
+    "Years": [
+      2023,
+      2024
+    ],
+    "Editor-in-Chief": [
+      {
+        "first_name": "John",
+        "last_name": "Watson",
+        "title": "Dr.",
+        "img_src": "images/eb/watson.jpg",
+        "organizations": [
+          {
+            "name": "Baker Street Clinic",
+            "department": "Medical Practice",
+            "url": null,
+            "location": "London",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "watson@example.com"
+        ],
+        "interests": [
+          "Medicine",
+          "Crime investigation"
+        ]
+      }
+    ],
+    "Associate Editor-in-Chief": [
+      {
+        "first_name": "Inspector",
+        "last_name": "Lestrade",
+        "title": null,
+        "img_src": "images/eb/lestrade.jpg",
+        "organizations": [
+          {
+            "name": "Scotland Yard",
+            "department": "Criminal Investigation",
+            "url": null,
+            "location": "London",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "lestrade@example.com"
+        ],
+        "interests": [
+          "Law enforcement"
+        ]
+      }
+    ],
+    "Editorial Assistant": [
+      {
+        "first_name": "Lancelot",
+        "last_name": "Du Lac",
+        "title": "Sir",
+        "img_src": "images/eb/lancelot.jpg",
+        "organizations": [
+          {
+            "name": "Camelot",
+            "department": "Knightly Order",
+            "url": "https://www.camelot.kingdom",
+            "location": "Camelot",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "lancelot@example.com"
+        ],
+        "interests": [
+          "Chivalry"
+        ],
+        "homepage": "https://www.google.com/search?q=camelot+lancelot"
+      }
+    ],
+    "Associate Editors": [
+      {
+        "first_name": "Robin",
+        "last_name": "Hood",
+        "title": null,
+        "img_src": "images/eb/robin.jpg",
+        "organizations": [
+          {
+            "name": "Sherwood Guild",
+            "department": "Guild Leadership",
+            "url": null,
+            "location": "Nottingham",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "robin@example.com"
+        ],
+        "interests": [
+          "Archery",
+          "Redistribution of wealth"
+        ]
+      },
+      {
+        "first_name": "Alice",
+        "last_name": "Liddell",
+        "title": null,
+        "img_src": "images/eb/alice.jpg",
+        "organizations": [
+          {
+            "name": "Wonderland Research",
+            "department": "Field Research",
+            "url": null,
+            "location": "Oxford",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "alice@example.com"
+        ],
+        "interests": [
+          "Curiosity",
+          "Exploration"
+        ]
+      },
+      {
+        "first_name": "Huckleberry",
+        "last_name": "Finn",
+        "title": null,
+        "img_src": "images/eb/huck.jpg",
+        "organizations": [
+          {
+            "name": "Mississippi Ventures",
+            "department": "Exploration",
+            "url": null,
+            "location": "Mississippi River",
+            "country": "USA"
+          }
+        ],
+        "emails": [
+          "huck@example.com"
+        ],
+        "interests": [
+          "Rafting"
+        ]
+      }
+    ]
+  },
+  "2025": {
+    "Title": "Editorial Board",
+    "Years": [
+      2025,
+      2026
+    ],
+    "Editor-in-Chief": [
+      {
+        "first_name": "Sherlock",
+        "last_name": "Holmes",
+        "title": "Mr.",
+        "img_src": "images/eb/holmes.jpg",
+        "organizations": [
+          {
+            "name": "Baker Street Investigations",
+            "department": "Consulting Detectives Unit",
+            "url": null,
+            "location": "London",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "sherlock@example.com"
+        ],
+        "interests": [
+          "Deductive reasoning",
+          "Violin",
+          "Forensic science"
+        ]
+      }
+    ],
+    "Associate Editor-in-Chief": [
+      {
+        "first_name": "Irene",
+        "last_name": "Adler",
+        "title": null,
+        "img_src": "images/eb/adler.jpg",
+        "organizations": [
+          {
+            "name": "Opera House",
+            "department": "Performance Arts",
+            "url": null,
+            "location": "London",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "adler@example.com"
+        ],
+        "interests": [
+          "Opera",
+          "Mystery"
+        ]
+      }
+    ],
+    "Editorial Assistant": [
+      {
+        "first_name": "Lancelot",
+        "last_name": "Du Lac",
+        "title": "Sir",
+        "img_src": "images/eb/lancelot.jpg",
+        "organizations": [
+          {
+            "name": "Camelot",
+            "department": "Knightly Order",
+            "url": "https://www.camelot.kingdom",
+            "location": "Camelot",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "lancelot@example.com"
+        ],
+        "interests": [
+          "Chivalry"
+        ],
+        "homepage": "https://www.google.com/search?q=camelot+lancelot"
+      }
+    ],
+    "Associate Editors": [
+      {
+        "first_name": "Alice",
+        "last_name": "Liddell",
+        "title": null,
+        "img_src": "images/eb/alice.jpg",
+        "organizations": [
+          {
+            "name": "Wonderland Research",
+            "department": "Field Research",
+            "url": null,
+            "location": "Oxford",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "alice@example.com"
+        ],
+        "interests": [
+          "Curiosity",
+          "Exploration"
+        ]
+      },
+      {
+        "first_name": "Tom",
+        "last_name": "Sawyer",
+        "title": null,
+        "img_src": "images/eb/tom.jpg",
+        "organizations": [
+          {
+            "name": "Mississippi Ventures",
+            "department": "Adventure",
+            "url": null,
+            "location": "St. Petersburg",
+            "country": "USA"
+          }
+        ],
+        "emails": [
+          "tom@example.com"
+        ],
+        "interests": [
+          "Adventure"
+        ]
+      },
+      {
+        "first_name": "Robin",
+        "last_name": "Hood",
+        "title": null,
+        "img_src": "images/eb/robin.jpg",
+        "organizations": [
+          {
+            "name": "Sherwood Guild",
+            "department": "Guild Leadership",
+            "url": null,
+            "location": "Nottingham",
+            "country": "UK"
+          }
+        ],
+        "emails": [
+          "robin@example.com"
+        ],
+        "interests": [
+          "Archery",
+          "Redistribution of wealth"
+        ]
+      }
+    ]
+  }
+}

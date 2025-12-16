@@ -1,0 +1,62 @@
+{
+  "2023": [
+    {
+      "first_name": "Alice",
+      "last_name": "Liddell",
+      "title": null,
+      "img_src": "images/eb/alice.jpg",
+      "img_other": {"2023": "images/eb/alice.jpg", "2025": "images/eb/alice.jpg"},
+      "organizations": [{"name": "Wonderland Research", "department": null, "url": null, "location": "Oxford", "country": "UK"}],
+      "emails": ["alice@example.com"],
+      "interests": ["Curiosity", "Exploration"]
+    },
+    {
+      "first_name": "Robin",
+      "last_name": "Hood",
+      "title": null,
+      "img_src": "images/eb/robin.jpg",
+      "img_other": {"2023": "images/eb/robin.jpg"},
+      "organizations": [{"name": "Sherwood Guild", "department": null, "url": null, "location": "Nottingham", "country": "UK"}],
+      "emails": ["robin@example.com"],
+      "interests": ["Archery"],
+      "years": {"2023": "Associate Editor"}
+    }
+  ],
+  "2024": [
+    {
+      "first_name": "Huckleberry",
+      "last_name": "Finn",
+      "title": null,
+      "img_src": "images/eb/huck.jpg",
+      "img_other": {"2024": "images/eb/huck.jpg"},
+      "organizations": [{"name": "Mississippi Ventures", "department": null, "url": null, "location": "Mississippi River", "country": "USA"}],
+      "emails": ["huck@example.com"],
+      "interests": ["Rafting"],
+      "years": {"2024": "Associate Editor"}
+    }
+  ],
+  "2025": [
+    {
+      "first_name": "Tom",
+      "last_name": "Sawyer",
+      "title": null,
+      "img_src": "images/eb/tom.jpg",
+      "img_other": {"2025": "images/eb/tom.jpg"},
+      "organizations": [{"name": "Mississippi Ventures", "department": null, "url": null, "location": "St. Petersburg", "country": "USA"}],
+      "emails": ["tom@example.com"],
+      "interests": ["Adventure"],
+      "years": {"2025": "Associate Editor"}
+    },
+    {
+      "first_name": "Alice",
+      "last_name": "Liddell",
+      "title": null,
+      "img_src": "images/eb/alice.jpg",
+      "img_other": {"2023": "images/eb/alice.jpg", "2025": "images/eb/alice.jpg"},
+      "organizations": [{"name": "Wonderland Research", "department": null, "url": null, "location": "Oxford", "country": "UK"}],
+      "emails": ["alice@example.com"],
+      "interests": ["Curiosity", "Exploration"],
+      "years": {"2023": "Associate Editor", "2025": "Associate Editor"}
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+<div id="footer">
+  <div class="partners">
+    <span class="purple">TVLSI</span> <span class="narrow">is a joint publication of the</span>
+    <img alt="IEEE Circuits and Systems Society Logo" src="/images/CandSLogo.jpg" width="22" height="22" />
+    <a href="http://www.ieee-cas.org/" target="_blank" rel="noopener">
+      IEEE Circuits and Systems Society <span class="fa fa-external-link" aria-hidden="true"></span>
+    </a>
+    <img alt="IEEE Computer Society Logo" src="/images/CSLogo.jpg" width="21" height="23" />
+    <a href="http://www.computer.org/" target="_blank" rel="noopener">
+      IEEE Computer Society <span class="fa fa-external-link" aria-hidden="true"></span>
+    </a>
+    <img alt="IEEE Solid-State Circuits Society" src="/images/SSCLogo.jpg" />
+    <a href="http://ewh.ieee.org/soc/sscs/" target="_blank" rel="noopener">
+      IEEE Solid-State Circuits Society <span class="fa fa-external-link" aria-hidden="true"></span>
+    </a>
+  </div>
+
+  <div>
+    <p>
+      &copy; {% if build.year %}{{ build.year }}{% else %}2025{% endif %} IEEE Transactions On Very Large Scale Integration (VLSI) Systems
+    </p>
+    <p class="contact">
+      Last updated: {{ page.date.toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'}) | default("May 2, 2025") }}
+    </p>
+  </div>
+</div>

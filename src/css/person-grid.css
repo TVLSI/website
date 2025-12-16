@@ -1,0 +1,319 @@
+/* Person Grid Layout */
+.person-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* Chair section - single column, left-aligned */
+.chair-section {
+  grid-template-columns: 1fr;
+  max-width: 250px;
+  margin: 1.5rem 0 3rem 0; /* Changed from 'auto' to '0' for left margin */
+}
+
+/* Person Tile Styling */
+.person-tile {
+  background-color: #f9f9f9;
+  padding: 1rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.2s ease;
+}
+
+.person-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.person-tile img {
+  border: 1px solid #eee;
+  width: 100%;
+  height: auto;
+  margin-bottom: 0.5rem;
+  display: block;
+  border-radius: 4px;
+}
+
+.person-info {
+  padding: 0;
+}
+
+/* Remove margins from unwanted paragraphs */
+.person-info > p {
+  margin: 0;
+  padding: 0;
+}
+
+.person-tile strong {
+  color: #003297;
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.person-role {
+  color: #003297;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 0.35rem;
+}
+
+.person-role-top {
+  text-align: center;
+  margin-bottom: 0.5rem;
+  color: #003297;
+  font-weight: 700;
+}
+
+.organization {
+  color: #666;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.person-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* Increased from 0.25rem */
+  margin-top: 0.5rem; /* Add top margin */
+}
+
+/* Remove spacing from paragraphs inside person-links */
+.person-links > p {
+  margin: 0;
+  padding: 0;
+}
+
+.person-links a {
+  display: flex; /* Changed from inline-flex to flex */
+  align-items: center;
+  color: #003297;
+  text-decoration: none;
+  font-size: 0.85rem;
+  white-space: nowrap; /* Prevent link text from breaking */
+}
+
+.person-links a:hover {
+  text-decoration: underline;
+}
+
+.link-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 0.25rem;
+  border: none !important;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Modal Styling */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.modal-content {
+  background: #fff;
+  max-width: 700px;
+  margin: 5% auto;
+  padding: 2rem;
+  position: relative;
+  border-radius: 8px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.modal-close:hover {
+  color: #000;
+}
+
+/* Person Card (Modal Content) Styling */
+.person-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  max-width: 42rem;
+  margin: 1rem auto;
+  background-color: white;
+}
+
+.person-card .person-flex {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .person-card .person-flex {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.person-card .person-photo {
+  width: 8rem;
+  /* Remove fixed height */
+  /* height: 8rem; */
+  flex-shrink: 0;
+}
+
+/* Adjust photo img to maintain aspect ratio */
+.person-card .person-photo img {
+  object-fit: cover;
+  border-radius: 0.375rem;
+  width: 100%;
+  height: auto; /* Changed from 100% to auto */
+  margin-bottom: 0;  /* Remove bottom margin since we control spacing with person-links margin-top */
+}
+
+.person-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.person-card .person-role-title {
+  color: #800;
+  font-weight: 700;
+  font-size: 1.15rem;
+  margin: 0 0 0.35rem 0;
+}
+
+.person-card p,
+.person-card li {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin: 0.25rem 0;
+}
+
+.person-card .person-org-list {
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+.person-card .person-org-list li {
+  list-style-type: disc;
+}
+
+.person-card .email-link {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.person-card .email-link:hover {
+  text-decoration: underline;
+}
+
+.person-card .section-label {
+  font-weight: 600;
+  color: #1f2937;
+  margin-top: 0.5rem;
+}
+
+/* Section Headers */
+.person-section-header {
+  color: #003297;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-top: 2rem;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.5rem;
+}
+
+/* Loading and error states */
+.loading {
+  text-align: center;
+  padding: 20px;
+}
+  
+.error-message {
+  padding: 20px;
+  background-color: #fff3f3;
+  border: 1px solid #ffcaca;
+  border-radius: 4px;
+  text-align: center;
+  color: #d63030;
+}
+
+.no-indent {
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}
+
+.no-indent p {
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}
+
+.org-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.org-name,
+.org-country {
+  margin: 0;
+  padding: 0;
+}
+.org-country {  
+  color: #666;  
+}
+
+/* Fix empty paragraph spacing in person-photo and person-links */
+.person-photo > p:empty,
+.person-links > p:empty {
+  margin: 0;
+  padding: 0;
+  height: 0;
+  display: none; /* Hide empty paragraphs completely */
+}
+
+/* Ensure person-links has proper spacing */
+.person-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* Space between the links */
+  margin-top: 0.5rem; /* Space after the image */
+}
+
+/* Make links display directly without paragraph wrappers */
+.person-links a {
+  display: flex;
+  align-items: center;
+  color: #003297;
+  text-decoration: none;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* Adjust person photo image bottom margin */
+.person-card .person-photo img {
+  object-fit: cover;
+  border-radius: 0.375rem;
+  width: 100%;
+  height: auto;
+  margin-bottom: 0;  /* Remove bottom margin since we control spacing with person-links margin-top */
+}

@@ -1,0 +1,92 @@
+{
+  "chair": {
+    "first_name": "King",
+    "last_name": "Arthur",
+    "title": "King",
+    "img_src": "images/eb/arthur.jpg",
+    "organizations": [
+      {
+        "name": "Camelot",
+        "department": "Royal Leadership",
+        "url": "https://www.camelot.kingdom",
+        "location": "Camelot",
+        "country": "UK"
+      }
+    ],
+    "emails": [
+      "arthur@example.com"
+    ],
+    "interests": [
+      "Knightly endeavors"
+    ],
+    "homepage": "https://www.google.com/search?q=king+arthur"
+  },
+  "members": [
+    {
+      "first_name": "Merlin",
+      "last_name": "Ambrosius",
+      "title": "Wizard",
+      "img_src": "images/eb/merlin.jpg",
+      "organizations": [
+        {
+          "name": "Camelot",
+          "department": "Magical Advisory",
+          "url": "https://www.camelot.kingdom",
+          "location": "Camelot",
+          "country": "UK"
+        }
+      ],
+      "emails": [
+        "merlin@example.com"
+      ],
+      "interests": [
+        "Magic",
+        "Prophecy"
+      ]
+    },
+    {
+      "first_name": "Guinevere",
+      "last_name": "Pendragon",
+      "title": null,
+      "img_src": "images/eb/guinevere.jpg",
+      "organizations": [
+        {
+          "name": "Camelot",
+          "department": "Diplomatic Affairs",
+          "url": "https://www.camelot.kingdom",
+          "location": "Camelot",
+          "country": "UK"
+        }
+      ],
+      "emails": [
+        "guinevere@example.com"
+      ],
+      "interests": [
+        "Diplomacy"
+      ],
+      "homepage": "https://www.google.com/search?q=camelot+guinevere"
+    },
+    {
+      "first_name": "Lancelot",
+      "last_name": "Du Lac",
+      "title": "Sir",
+      "img_src": "images/eb/lancelot.jpg",
+      "organizations": [
+        {
+          "name": "Camelot",
+          "department": "Knightly Order",
+          "url": "https://www.camelot.kingdom",
+          "location": "Camelot",
+          "country": "UK"
+        }
+      ],
+      "emails": [
+        "lancelot@example.com"
+      ],
+      "interests": [
+        "Chivalry"
+      ],
+      "homepage": "https://www.google.com/search?q=camelot+lancelot"
+    }
+  ]
+}

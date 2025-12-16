@@ -1,0 +1,63 @@
+---
+layout: base.njk
+pagination:
+  data: downloads
+  size: 1
+  alias: year
+permalink: /top-downloads/{{ year }}/
+templateEngineOverride: njk,html
+---
+{%- set years = downloads | keys | sortYearsDesc -%}
+{%- set yearData = downloads[year] -%}
+
+<h1>Top 25 Downloaded Manuscripts</h1>
+<div class="instruction-text">Select a year to view the Top 25 downloads.</div>
+
+<div class="year-navigation">
+{%- for y in years -%}
+  <span class="year-item"><a class="year-button{% if y == year %} active{% endif %}" href="/top-downloads/{{ y }}/">{{ y }}</a>{% if not loop.last %}<span class="year-separator">|</span>{% endif %}</span>
+{%- endfor -%}
+</div>
+
+<h2>Year: {{ year }}</h2>
+{% include "components/downloads-year.njk" %}
+
+<style>
+  .instruction-text {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .downloads-list {
+    list-style-type: disc;
+    padding-left: 20px;
+    margin: 0;
+  }
+  
+  .download-item {
+    margin-bottom: 20px;
+  }
+  
+  .download-title {
+    font-weight: normal;
+    color: #0066a1;
+    text-decoration: none;
+  }
+  
+  .download-title:hover {
+    text-decoration: underline;
+  }
+  
+  .external-icon {
+    margin-left: 5px;
+    font-size: 0.8rem;
+    opacity: 0.7;
+  }
+  
+  .no-downloads {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+    padding: 20px;
+  }
+</style>

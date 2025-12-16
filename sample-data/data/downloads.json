@@ -1,0 +1,62 @@
+{
+  "2023": [
+    {
+      "title": "Study of mysterious footprints",
+      "url": "https://example.com/footprints.pdf",
+      "authors": ["Sherlock Holmes"],
+      "order": 1
+    },
+    {
+      "title": "Adventures on the Mississippi",
+      "url": "https://example.com/mississippi.pdf",
+      "authors": ["Tom Sawyer", "Huckleberry Finn"],
+      "order": 2
+    },
+    {
+      "title": "Robin Hood's archery tricks",
+      "url": "https://example.com/archery.pdf",
+      "authors": ["Robin Hood"],
+      "order": 3
+    }
+  ],
+  "2024": [
+    {
+      "title": "Journey to Wonderland",
+      "url": "https://example.com/wonderland.pdf",
+      "authors": ["Alice Liddell"],
+      "order": 1
+    },
+    {
+      "title": "Camelot code of chivalry",
+      "url": "https://example.com/camelot.pdf",
+      "authors": ["King Arthur"],
+      "order": 2
+    },
+    {
+      "title": "Magic for beginners",
+      "url": "https://example.com/magic.pdf",
+      "authors": ["Merlin"],
+      "order": 3
+    }
+  ],
+  "2025": [
+    {
+      "title": "The final problem",
+      "url": "https://example.com/finalproblem.pdf",
+      "authors": ["Sherlock Holmes", "Professor Moriarty"],
+      "order": 1
+    },
+    {
+      "title": "Across the sea in Nautilus",
+      "url": "https://example.com/nautilus.pdf",
+      "authors": ["Captain Nemo"],
+      "order": 2
+    },
+    {
+      "title": "Adventures in Oz",
+      "url": "https://example.com/oz.pdf",
+      "authors": ["Dorothy Gale"],
+      "order": 3
+    }
+  ]
+}

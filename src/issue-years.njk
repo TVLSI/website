@@ -1,0 +1,10 @@
+---
+pagination:
+  data: issues
+  size: 1
+  alias: year
+permalink: "/issues/{{ year }}.html"
+eleventyExcludeFromCollections: true
+---
+{% set yearIssues = issues[year] | sort(false, false, "numerical_month") | reverse %}
+{% include "components/issue-year.njk" %}

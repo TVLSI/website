@@ -1,0 +1,25 @@
+[
+  {
+    "first_name": "Sherlock",
+    "last_name": "Holmes",
+    "title": "Mr.",
+    "img_src": "images/eb/holmes.jpg",
+    "organizations": [
+      {
+        "name": "Baker Street Investigations",
+        "department": "Consulting Detectives Unit",
+        "url": null,
+        "location": "London",
+        "country": "UK"
+      }
+    ],
+    "emails": [
+      "sherlock@example.com"
+    ],
+    "interests": [
+      "Deductive reasoning",
+      "Violin",
+      "Forensic science"
+    ]
+  }
+]

@@ -1,0 +1,9 @@
+---
+pagination:
+  data: downloads
+  size: 1
+  alias: year
+permalink: /topdown/{{ year }}.html
+---
+{% set yearData = downloads[year] %}
+{% include "components/downloads-year.njk" %}

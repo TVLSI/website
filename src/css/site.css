@@ -1,0 +1,627 @@
+/* Base styles */
+body {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-size: medium;
+  background-color: #DFDFFF;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Container layout - ensure this is applied correctly */
+#container {
+  width: 80%;
+  min-width: 800px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  background-color: #fff;
+  position: relative;
+  z-index: 1;
+}
+
+/* Header styles - no width property needed since it's inside container */
+#header {
+  position: relative;
+  z-index: 99;
+}
+
+#masthead {
+  z-index: 99;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  text-align: left;
+  background-image: url('../images/gradient.JPG');
+  background-position: top;
+  background-repeat: repeat;
+  height: 150px;
+}
+
+#logotext {
+  margin-left: 2em;
+  position: relative;
+  float: left;
+  height: 100px;
+  margin-top: 25px;
+}
+
+#logo {
+  position: relative;
+  float: right;
+  margin-right: 0; /* Remove the 2em */
+  margin-top: 6px;
+  padding: 0;
+}
+
+/* Right-align and pad the logo/social group */
+#logo-social-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding-right: 32px; /* Adjust as needed for edge spacing */
+}
+
+/* Social icons row styling */
+#social {
+  margin-bottom: 2px; /* Less space between icons and logo */
+  padding-top: 24px; /* More space from the top */
+}
+
+.social-icons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Remove any padding from #logo if present */
+#logo {
+  padding: 0 !important;
+}
+
+/* Logo text styles */
+.logotexttop {
+  font-family: "Arial Narrow";
+  font-size: large;
+  font-weight: bolder;
+  display: block;
+  width: 450px;
+}
+
+.logotextbottom {
+  font-family: "Arial Black";
+  font-size: x-large;
+  color: #003297;
+  display: block;
+  width: 450px;
+}
+
+/* Content layout */
+#content {
+  padding: 1em 2em;
+  background-color: #fff;
+}
+
+/* Footer styles */
+#footer {
+  clear: both;
+  margin-top: 2em;
+  padding: 1.5em 1em;
+  text-align: center;
+  background-color: #808080;
+  border-top: 1px solid #707070;
+  font-size: 90%;
+  color: #ffffff;
+}
+
+.partners {
+  font-family: "Arial Narrow", Arial, sans-serif;
+  margin-bottom: 1.5em;
+  line-height: 2;
+}
+
+.partners .purple {
+  font-weight: bold;
+  font-size: 110%;
+  margin-right: 0.3em;
+}
+
+.partners .narrow {
+  margin-right: 0.5em;
+}
+
+.partners img {
+  vertical-align: middle;
+  margin: 0 0.4em;
+}
+
+#footer a {
+  vertical-align: middle;
+  margin-right: 15px;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+#footer a:hover {
+  text-decoration: underline;
+  color: #f0f0f0;
+}
+
+#footer p {
+  margin: 0.5em 0;
+  color: #ffffff;
+}
+
+.contact {
+  font-family: "Century Gothic", Arial, sans-serif;
+  font-size: 80%;
+  color: #e0e0e0;
+  margin-top: 1em;
+}
+
+/* Typography */
+h1 {
+  font-size: x-large;
+  color: #800;
+}
+
+h2 {
+  font-size: x-large;
+  color: #FFAA33;
+}
+
+h3 {
+  font-size: large;
+  color: #600;
+}
+
+h4 {
+  font-size: medium;
+  color: #500;
+}
+
+a {
+  color: #13a;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #fa3;
+  text-decoration: underline;
+}
+
+/* Utility classes */
+.italic {
+  font-style: italic;  
+}
+
+.purple {
+  color: #003297;
+}
+
+.narrow {
+  font: small normal bold "Arial Narrow";
+}
+
+.title {
+  color: #000080;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.nobullet {
+  list-style: none;
+}
+
+/* Editorial styles */
+.EditorialText {
+  list-style: disc;
+  margin-left: 19px;
+  padding: 0;
+}
+
+.Editorial {
+  margin: 20px;
+}
+
+.EditorialImage {
+  margin-bottom: 10px;
+}
+
+.AE, .TopAE {
+  margin-left: 20px;
+}
+
+.EBHeader {  
+  left: 0;
+  right: 0;
+}
+
+/* Table styles */
+table {
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+
+th, td {
+  padding: 0.5em;
+  border: 1px solid #ccc;
+}
+
+th {
+  background-color: #f0f0f0;
+}
+
+/* Image styles */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+.float-right {
+  float: right;
+  margin: 0 0 1em 1em;
+}
+
+.float-left {
+  float: left;
+  margin: 0 1em 1em 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  #container {
+    width: 95%;
+    min-width: initial;
+  }
+  
+  .logotexttop, .logotextbottom {
+    width: auto;
+    max-width: 300px;
+  }
+  
+  #logo img {
+    width: 150px;
+  }
+}
+
+/* Two-column layout */
+.content-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -15px;
+}
+
+.main-content {
+  flex: 1;
+  min-width: 65%;
+  padding: 0 15px;
+}
+
+.sidebar {
+  width: 30%;
+  padding: 0 15px;
+  margin-top: 20px;
+}
+
+/* Issue display styling */
+.issue-container {
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.issue-link {
+  display: block;
+  text-decoration: none;
+  color: #13a;
+  transition: transform 0.2s;
+}
+
+.issue-link:hover {
+  transform: translateY(-3px);
+}
+
+.issue-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 8px;
+  border: 1px solid #ccc;
+}
+
+.issue-text {
+  display: block;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.sidebar-item {
+  margin: 20px 0;
+  padding: 10px;
+  background-color: #f8f8f8;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.sidebar-item p {
+  margin-top: 0;
+}
+
+/* Plain sidebar links without boxes */
+.sidebar-link {
+  margin: 20px 0;
+  padding: 10px 0;
+  text-align: center;
+}
+
+#content .sidebar-link {
+  margin: 20px 0 !important;
+  padding: 10px 0 !important;
+  text-align: center !important;
+  background-color: transparent !important;
+  border: none !important;
+}
+
+#content .sidebar-link p {
+  margin-top: 0 !important;
+}
+
+/* Responsive adjustments for two-column layout */
+@media (max-width: 900px) {
+  .content-wrapper {
+    flex-direction: column;
+  }
+  
+  .main-content, .sidebar {
+    width: 100%;
+    min-width: 100%;
+  }
+  
+  .sidebar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .issue-container {
+    width: 45%;
+    margin: 0 2.5% 20px;
+  }
+  
+  .sidebar-item {
+    width: 100%;
+  }
+}
+
+@media (max-width: 650px) {
+  #masthead {
+    height: auto;
+    padding: 10px 0;
+  }
+  
+  #logotext, #logo {
+    float: none;
+    text-align: center;
+    margin: 10px auto;
+  }
+  
+  .issue-container {
+    width: 90%;
+    margin: 0 5% 20px;
+  }
+}
+
+/* Footer specific styling */
+#footer .partners img {
+  vertical-align: middle;
+  margin: 0 5px;
+}
+
+#footer a {
+  vertical-align: middle;
+  margin-right: 15px;
+}
+
+/* New image label */
+.newimage {
+  width: 50px;
+  float: right;
+  border: 0px;
+}
+
+/* Responsive footer adjustments */
+@media (max-width: 768px) {
+  .partners {
+    line-height: 2.5;
+  }
+  
+  #footer a {
+    margin-right: 0.5em;
+    margin-bottom: 0.5em;
+    display: inline-block;
+  }
+}
+
+/* Two-column layout - with stronger specificity */
+#content .content-wrapper {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  margin: 0 -15px !important;
+}
+
+#content .main-content {
+  flex: 1 !important;
+  min-width: 65% !important;
+  padding: 0 15px !important;
+  box-sizing: border-box !important;
+}
+
+#content .sidebar {
+  width: 30% !important;
+  padding: 0 15px !important;
+  margin-top: 20px !important;
+  box-sizing: border-box !important;
+}
+
+/* Issue display styling - with improved specificity */
+#content .sidebar h2 {
+  color: #003297;
+  margin-top: 0;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5em;
+}
+
+#content .issue-container {
+  margin-bottom: 25px !important;
+  text-align: center !important;
+}
+
+#content .issue-link {
+  display: block !important;
+  text-decoration: none !important;
+  color: #13a !important;
+  transition: transform 0.2s !important;
+}
+
+#content .issue-link:hover {
+  transform: translateY(-3px) !important;
+  text-decoration: none !important;
+}
+
+#content .issue-image {
+  display: block !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 auto 8px auto !important;
+  border: 1px solid #ccc !important;
+}
+
+#content .issue-text {
+  display: block !important;
+  font-weight: bold !important;
+  margin-top: 5px !important;
+}
+
+#content .sidebar-item {
+  margin: 20px 0 !important;
+  padding: 10px !important;
+  background-color: #f8f8f8 !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 4px !important;
+  text-align: center !important;
+}
+
+#content .sidebar-item p {
+  margin-top: 0 !important;
+}
+
+/* Responsive adjustments with stronger specificity */
+@media (max-width: 900px) {
+  #content .content-wrapper {
+    flex-direction: column !important;
+  }
+  
+  #content .main-content, 
+  #content .sidebar {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+  
+  #content .sidebar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+  }
+  
+  #content .issue-container {
+    width: 45% !important;
+    margin: 0 2.5% 20px !important;
+  }
+  
+  #content .sidebar-item {
+    width: 100% !important;
+  }
+}
+
+/* Year Navigation Styles */
+.year-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+/* Fix for unwanted paragraph spacing */
+.year-navigation p {
+  margin: 0;
+  padding: 0;
+  display: inline;
+}
+
+.year-item {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+}
+
+.year-button {
+  display: inline-block;
+  padding: 3px 10px;
+  margin: 0;
+  background-color: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: normal;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #0066a1;
+  text-decoration: none;
+  line-height: 1.5;
+}
+
+.year-button:hover {
+  color: #003297;
+  text-decoration: underline;
+}
+
+.year-button.active {
+  background-color: #0066a1;
+  color: white;
+  border: 1px solid #0066a1;
+  border-radius: 4px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.year-button.active:hover {
+  text-decoration: none;
+}
+
+.year-separator {
+  color: #ccc;
+  margin: 0 2px;
+}
+
+/* Responsive adjustments for year navigation */
+@media (max-width: 600px) {
+  .year-navigation {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .year-item {
+    margin-bottom: 0.5rem;
+  }
+}
+
+.fa-external-link {
+  margin-left: 0.2em; /* Adjust as needed for desired spacing */
+  /* Optionally, align vertically if needed: */
+  vertical-align: middle;
+}

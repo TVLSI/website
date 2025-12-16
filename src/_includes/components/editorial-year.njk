@@ -1,0 +1,40 @@
+{% set yearRange = year + "-" + (year | int + 1) %}
+
+<div class="editorial-year-content">
+  
+  {% if editorialBoard[year]["Editor-in-Chief"] and editorialBoard[year]["Editor-in-Chief"].length > 0 %}
+    <h3>Editor-in-Chief</h3>
+    <div class="person-grid">
+      {% for person in editorialBoard[year]["Editor-in-Chief"] %}
+        {% personTile "Editor-in-Chief", person, "eic-" + year + "-" + loop.index %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if editorialBoard[year]["Associate Editor-in-Chief"] and editorialBoard[year]["Associate Editor-in-Chief"].length > 0 %}
+    <h3>Associate Editor-in-Chief</h3>
+    <div class="person-grid">
+      {% for person in editorialBoard[year]["Associate Editor-in-Chief"] %}
+        {% personTile "Associate Editor-in-Chief", person, "aeic-" + year + "-" + loop.index %}
+      {% endfor %}
+    </div>
+  {% endif %}
+  
+  {% if editorialBoard[year]["Associate Editors"] and editorialBoard[year]["Associate Editors"].length > 0 %}
+    <h3>Associate Editors</h3>
+    <div class="person-grid">
+      {% for person in editorialBoard[year]["Associate Editors"] %}
+        {% personTile "Associate Editor", person, "ae-" + year + "-" + loop.index %}
+      {% endfor %}
+    </div>
+  {% endif %}
+  
+  {% if editorialBoard[year]["Editorial Assistant"] and editorialBoard[year]["Editorial Assistant"].length > 0 %}
+    <h3>Editorial Assistant</h3>
+    <div class="person-grid">
+      {% for person in editorialBoard[year]["Editorial Assistant"] %}
+        {% personTile "Editorial Assistant", person, "ea-" + year + "-" + loop.index %}
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>

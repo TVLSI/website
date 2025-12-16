@@ -1,0 +1,38 @@
+---
+layout: base.njk
+pagination:
+  data: editorialBoard
+  size: 1
+  alias: year
+permalink: /editorial-board/{{ year | int }}-{{ (year | int) + 1 }}/index.html
+templateEngineOverride: njk,html
+---
+{%- set yearData = editorialBoard[year] -%}
+{%- set yearRange = year + "-" + (year | int + 1) -%}
+
+<h1>Editorial Boards by Year</h1>
+<div class="instruction-text">Select a year to view the editorial board.</div>
+<hr>
+
+<div class="year-navigation">
+{%- set years = editorialBoard | keys | sortYearsDesc -%}
+{%- for y in years -%}
+{%- set thisYearRange = y + "-" + (y | int + 1) -%}
+<span class="year-item"><a class="year-button{% if y == year %} active{% endif %}" href="/editorial-board/{{ thisYearRange }}/">{{ thisYearRange }}</a>{%- if not loop.last %}<span class="year-separator">|</span>{% endif -%}</span>
+{%- endfor -%}
+</div>
+<h2>Editorial Board: {{ yearRange }}</h2>
+
+{% include "components/editorial-year.njk" %}
+
+<style>
+  .instruction-text {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+  hr {
+    margin: 1rem 0;
+    border: 0;
+    border-top: 1px solid #ccc;
+  }
+</style>

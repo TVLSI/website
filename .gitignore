@@ -1,0 +1,30 @@
+# Node modules directory
+node_modules/
+
+# Output directory (default is _site, customize if you've configured a different output directory)
+_site/
+
+# Temporary files and logs
+*.log
+npm-debug.log*
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# VScode settings (optional, if you use VSCode)
+.vscode/
+
+# Other build artifacts
+.cache/
+
+# Ignore all files in the data directory
+/data/
+/assets/images/eb/
+.use-tvlsi-data
+.env

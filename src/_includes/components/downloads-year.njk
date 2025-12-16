@@ -1,0 +1,21 @@
+{% if yearData and yearData.length > 0 %}
+  <ul class="downloads-list">
+    {% for download in yearData %}
+      <li class="download-item">
+        {% if download.url %}
+          <a href="{{ download.url }}" target="_blank" rel="noopener noreferrer" class="download-title">
+            {{ download.title }}
+            <i class="fas fa-external-link-alt external-icon"></i>
+          </a>
+        {% else %}
+          <span class="download-title">{{ download.title }}</span>
+        {% endif %}
+        {% if download.authors and download.authors.length > 0 %}
+          <br>{{ download.authors | join(", ") }}
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="no-downloads">No download data available for this year.</p>
+{% endif %}
