@@ -49,81 +49,23 @@ jobs:
             git checkout -b ${{ env.TARGET_BRANCH }}
           fi
 
-      - name: Clone website-data repository
-        run: |
-          git clone --depth 1 --branch ${{ env.DATA_BRANCH }} \
-            https://x-access-token:${{ secrets.DATA_REPO_TOKEN }}@github.com/${{ env.DATA_REPO }}.git \
-            /tmp/website-data
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f /tmp/website-data/requirements.txt ]; then
-            pip install -r /tmp/website-data/requirements.txt
-          fi
-
-      - name: Run data generation scripts
-        working-directory: /tmp/website-data
-        run: |
-          echo "Running data generation scripts..."
-          
-          # Always run all scripts to ensure generated-data is complete
-          # The scripts are idempotent and will only update what's needed
-          
-          echo "=== Running update_eb.py ==="
-          python scripts/update_eb.py || echo "update_eb.py completed (may have warnings)"
-          
-          echo "=== Running create_downloads_file.py ==="
-          python scripts/create_downloads_file.py || echo "create_downloads_file.py completed (may have warnings)"
-          
-          echo "=== Running update_issues.py (with empty input) ==="
-          # update_issues.py expects stdin input for new issues
-          # For sync, we just regenerate from existing source data
-          echo '[]' | python scripts/update_issues.py || echo "update_issues.py completed (may have warnings)"
-          
-          echo "=== Data generation complete ==="
-
-      - name: Copy generated data to Website
-        run: |
-          # Ensure data directory exists
-          mkdir -p data
-          mkdir -p assets/images/eb
-          
-          # Copy JSON files from generated-data
-          echo "Copying JSON files..."
-          cp -v /tmp/website-data/generated-data/*.json data/ 2>/dev/null || echo "No JSON files to copy"
-          
-          # Copy EB images from generated-data/images/eb
-          echo "Copying EB images..."
-          if [ -d "/tmp/website-data/generated-data/images/eb" ]; then
-            cp -v /tmp/website-data/generated-data/images/eb/* assets/images/eb/ 2>/dev/null || echo "No images to copy"
-          fi
-          
-          echo "=== Files copied ==="
-          ls -la data/
-          ls -la assets/images/eb/ 2>/dev/null || echo "No EB images directory"
-
-      - name: Commit changes
+      - name: Create marker file for website-data branch reference
         id: commit
         run: |
-          git add data/
-          git add assets/images/eb/
+          # Create a marker file that tells build workflows which website-data branch to use
+          echo "TVLSI/website-data@${{ env.DATA_BRANCH }}" > .use-tvlsi-data
+          
+          git add .use-tvlsi-data
           
           if git diff --staged --quiet; then
             echo "No changes to commit"
             echo "has_changes=false" >> $GITHUB_OUTPUT
           else
-            git commit -m "Sync data from website-data PR #${{ env.SOURCE_PR }}"
+            git commit -m "Link to website-data PR #${{ env.SOURCE_PR }} (branch: ${{ env.DATA_BRANCH }})"
             echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Push branch
-        if: steps.commit.outputs.has_changes == 'true'
         run: |
           git push -u origin ${{ env.TARGET_BRANCH }} --force
 
@@ -149,7 +91,7 @@ jobs:
 
       - name: Create PR if needed
         id: create-pr
-        if: steps.commit.outputs.has_changes == 'true' && fromJson(steps.check-pr.outputs.result).exists == false
+        if: fromJson(steps.check-pr.outputs.result).exists == false
         uses: actions/github-script@v7
         with:
           script: |
@@ -157,7 +99,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `Data: ${{ github.event.client_payload.pr_title }}`,
-              body: `This PR syncs data changes from [website-data PR #${{ env.SOURCE_PR }}](https://github.com/${{ env.DATA_REPO }}/pull/${{ env.SOURCE_PR }}).
+              body: `This PR is linked to [website-data PR #${{ env.SOURCE_PR }}](https://github.com/${{ env.DATA_REPO }}/pull/${{ env.SOURCE_PR }}).
             
             ---
             
@@ -169,9 +111,13 @@ jobs:
             
             ---
             
-            ### Commands (on website-data PR)
-            - \`/preview\` - Deploy to GitHub Pages for review
+            ### Next Steps
+            
+            Comment on the **website-data PR** to:
+            - \`/preview\` - Build and deploy to GitHub Pages for review
             - \`/deploy\` - Mark for production deployment on merge
+            
+            Data generation happens during preview/deploy, not in this PR.
             `,
               head: '${{ env.TARGET_BRANCH }}',
               base: 'main'
@@ -190,7 +136,6 @@ jobs:
           fi
 
       - name: Comment on source PR
-        if: steps.commit.outputs.has_changes == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.DATA_REPO_TOKEN }}
@@ -206,12 +151,14 @@ jobs:
             **[TVLSI/website#${prNumber}](https://github.com/TVLSI/website/pull/${prNumber})**
             
             ### Next Steps
-            - Comment \`/preview\` to deploy a preview to GitHub Pages
-            - Comment \`/deploy\` to mark for production deployment
-            - Merge this PR to trigger auto-merge of the Website PR`
+            - Comment \`/preview\` to build and deploy a preview to GitHub Pages
+            - Comment \`/deploy\` to mark for production deployment on merge
+            - Merge this PR to trigger auto-merge of the Website PR
+            
+            > **Note:** Data generation happens when you run \`/preview\` or deploy, not during PR sync.`
               : `🔄 **Website PR Updated**
             
-            The Website PR has been updated with your latest changes:
+            The Website PR branch has been updated:
             **[TVLSI/website#${prNumber}](https://github.com/TVLSI/website/pull/${prNumber})**`;
             
             await github.rest.issues.createComment({
