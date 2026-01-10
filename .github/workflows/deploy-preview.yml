@@ -11,6 +11,8 @@
 
 name: Deploy Preview
 
+run-name: "Preview #${{ github.event.client_payload.pr_number }}: ${{ github.event.client_payload.pr_title }}"
+
 on:
   repository_dispatch:
     types: [preview-request]

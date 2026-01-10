@@ -11,6 +11,8 @@
 
 name: Data Sync
 
+run-name: "Data Sync #${{ github.event.client_payload.pr_number }}: ${{ github.event.client_payload.pr_title }}"
+
 on:
   repository_dispatch:
     types: [data-pr-sync]
