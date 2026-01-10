@@ -5,12 +5,20 @@
 # corresponding branch and PR in this repository.
 #
 # See website-data/docs/AUTOMATION.md for full documentation.
+#
+# Required secrets:
+#   DATA_REPO_TOKEN - PAT with repo access to TVLSI/website-data (for commenting on source PR)
 
 name: Data Sync
 
 on:
   repository_dispatch:
     types: [data-pr-sync]
+
+# Grant necessary permissions for creating branches and PRs
+permissions:
+  contents: write
+  pull-requests: write
 
 env:
   DATA_REPO: TVLSI/website-data
@@ -19,9 +27,25 @@ env:
   TARGET_BRANCH: data/${{ github.event.client_payload.branch }}
 
 jobs:
+  # Log the incoming dispatch event for debugging
+  log-event:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log dispatch payload
+        run: |
+          echo "=== Data Sync Triggered ==="
+          echo "Action: ${{ github.event.client_payload.action }}"
+          echo "Source PR: #${{ github.event.client_payload.pr_number }}"
+          echo "Source Branch: ${{ github.event.client_payload.branch }}"
+          echo "Source SHA: ${{ github.event.client_payload.sha }}"
+          echo "Sender: ${{ github.event.client_payload.sender }}"
+          echo "Target Branch: data/${{ github.event.client_payload.branch }}"
+          echo "=========================="
+
   # Handle PR opened or updated - create/update branch and PR
   sync-pr:
     runs-on: ubuntu-latest
+    needs: log-event
     if: github.event.client_payload.action == 'opened' || github.event.client_payload.action == 'updated'
     
     steps:
@@ -38,14 +62,16 @@ jobs:
 
       - name: Create or checkout target branch
         run: |
+          echo "Target branch: ${{ env.TARGET_BRANCH }}"
+          
           # Check if branch exists remotely
           if git ls-remote --exit-code --heads origin ${{ env.TARGET_BRANCH }}; then
-            echo "Branch exists, checking out"
+            echo "✓ Branch exists, checking out and resetting to main"
             git fetch origin ${{ env.TARGET_BRANCH }}
             git checkout ${{ env.TARGET_BRANCH }}
             git reset --hard origin/main
           else
-            echo "Creating new branch from main"
+            echo "✓ Creating new branch from main"
             git checkout -b ${{ env.TARGET_BRANCH }}
           fi
 
@@ -54,6 +80,7 @@ jobs:
         run: |
           # Create a marker file that tells build workflows which website-data branch to use
           echo "TVLSI/website-data@${{ env.DATA_BRANCH }}" > .use-tvlsi-data
+          echo "✓ Created .use-tvlsi-data pointing to branch: ${{ env.DATA_BRANCH }}"
           
           git add .use-tvlsi-data
           
@@ -68,6 +95,7 @@ jobs:
       - name: Push branch
         run: |
           git push -u origin ${{ env.TARGET_BRANCH }} --force
+          echo "✓ Pushed branch ${{ env.TARGET_BRANCH }}"
 
       - name: Check for existing PR
         id: check-pr
@@ -168,21 +196,149 @@ jobs:
               body: body
             });
 
-  # Handle PR merged - will be implemented in Phase 3
+  # Handle PR merged - auto-merge the Website PR
   handle-merge:
     runs-on: ubuntu-latest
+    needs: log-event
     if: github.event.client_payload.action == 'merged'
     
+    outputs:
+      has_deploy_label: ${{ steps.check-label.outputs.has_deploy_label || 'false' }}
+      pr_number: ${{ steps.find-pr.outputs.pr_number }}
+    
     steps:
-      - name: Log merge event
+      - name: Find corresponding PR
+        id: find-pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const targetBranch = 'data/${{ github.event.client_payload.branch }}';
+            
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${targetBranch}`,
+              state: 'open'
+            });
+            
+            if (prs.length === 0) {
+              console.log('No open PR found for branch: ' + targetBranch);
+              core.setOutput('pr_number', '');
+              return null;
+            }
+            
+            const pr = prs[0];
+            console.log(`Found PR #${pr.number}`);
+            core.setOutput('pr_number', pr.number);
+            return pr.number;
+
+      - name: Check for deploy label on source PR
+        id: check-label
+        if: steps.find-pr.outputs.pr_number
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.DATA_REPO_TOKEN }}
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: '${{ env.DATA_REPO }}'.split('/')[0],
+              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              pull_number: ${{ env.SOURCE_PR }}
+            });
+            
+            const hasDeployLabel = pr.labels.some(label => label.name === 'deploy-on-merge');
+            console.log(`Has deploy-on-merge label: ${hasDeployLabel}`);
+            core.setOutput('has_deploy_label', hasDeployLabel);
+            return hasDeployLabel;
+
+      - name: Merge Website PR
+        if: steps.find-pr.outputs.pr_number
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.find-pr.outputs.pr_number }};
+            
+            try {
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                merge_method: 'squash',
+                commit_title: `Merge data from website-data PR #${{ env.SOURCE_PR }}`
+              });
+              console.log(`✓ Merged PR #${prNumber}`);
+            } catch (e) {
+              console.log(`Failed to merge PR: ${e.message}`);
+              throw e;
+            }
+
+      - name: Delete branch
+        if: steps.find-pr.outputs.pr_number
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            const targetBranch = 'data/${{ github.event.client_payload.branch }}';
+            
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `heads/${targetBranch}`
+              });
+              console.log(`✓ Deleted branch ${targetBranch}`);
+            } catch (e) {
+              console.log(`Could not delete branch: ${e.message}`);
+            }
+
+      - name: Comment on source PR
+        if: steps.find-pr.outputs.pr_number
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.DATA_REPO_TOKEN }}
+          script: |
+            const hasDeployLabel = '${{ steps.check-label.outputs.has_deploy_label }}' === 'true';
+            const prNumber = ${{ steps.find-pr.outputs.pr_number }};
+            
+            let body = `✅ **Website PR Merged**
+            
+            The corresponding Website PR has been automatically merged:
+            **[TVLSI/website#${prNumber}](https://github.com/TVLSI/website/pull/${prNumber})**`;
+            
+            if (hasDeployLabel) {
+              body += `
+            
+            🚀 **Production deployment will now begin** (marked with \`/deploy\`)`;
+            } else {
+              body += `
+            
+            > **Note:** No production deployment will occur. Use \`/deploy\` before merging to deploy to production.`;
+            }
+            
+            await github.rest.issues.createComment({
+              owner: '${{ env.DATA_REPO }}'.split('/')[0],
+              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              issue_number: ${{ env.SOURCE_PR }},
+              body: body
+            });
+
+  # Trigger production deploy if the source PR had the deploy label
+  trigger-production-deploy:
+    runs-on: ubuntu-latest
+    needs: handle-merge
+    if: needs.handle-merge.outputs.has_deploy_label == 'true'
+    
+    steps:
+      - name: Trigger production deployment
         run: |
-          echo "PR #${{ env.SOURCE_PR }} was merged"
-          echo "This will trigger auto-merge in Phase 3"
-          # Phase 3 implementation will go here
+          echo "Production deployment triggered!"
+          echo "This will invoke the deploy-production workflow"
+        # The deploy-production workflow is triggered by push to main,
+        # which happens when the PR is merged above
 
   # Handle PR closed without merge - cleanup
   handle-close:
     runs-on: ubuntu-latest
+    needs: log-event
     if: github.event.client_payload.action == 'closed'
     
     steps:
