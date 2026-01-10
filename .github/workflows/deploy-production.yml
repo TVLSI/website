@@ -199,8 +199,9 @@ jobs:
           
           echo "Deploying to ${SFTP_HOST}:${PORT}${SFTP_PATH}"
           
+          # --delete removes remote files that don't exist locally
           lftp -u "${SFTP_USERNAME},${SFTP_PASSWORD}" \
-            -e "set sftp:auto-confirm yes; set ssl:verify-certificate no; mirror -R --verbose ./_site/ ${SFTP_PATH}; quit" \
+            -e "set sftp:auto-confirm yes; set ssl:verify-certificate no; mirror -R --verbose --delete ./_site/ ${SFTP_PATH}; quit" \
             sftp://${SFTP_HOST}:${PORT}
           
           echo "✓ SFTP deployment complete"

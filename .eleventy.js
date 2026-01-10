@@ -47,6 +47,36 @@ module.exports = function(eleventyConfig) {
     return typeof obj;
   });
 
+  // Add url filter for resolving paths with baseUrl
+  eleventyConfig.addFilter("url", function(path) {
+    const baseUrl = process.env.BASE_URL || "";
+    // If path already starts with http:// or https://, return as-is
+    if (path && (path.startsWith('http://') || path.startsWith('https://'))) {
+      return path;
+    }
+    // Prepend baseUrl to absolute paths
+    if (path && path.startsWith('/')) {
+      return baseUrl + path;
+    }
+    return path;
+  });
+
+  // Transform to fix absolute paths in HTML output for GitHub Pages
+  eleventyConfig.addTransform("baseUrlTransform", function(content, outputPath) {
+    const baseUrl = process.env.BASE_URL || "";
+    // Only process HTML files and only if baseUrl is set
+    if (baseUrl && outputPath && outputPath.endsWith(".html")) {
+      // Fix href="/path" patterns, but NOT if already prefixed with baseUrl
+      // Using negative lookahead to avoid matching paths that already start with baseUrl
+      const baseUrlEscaped = baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const hrefRegex = new RegExp(`href="/((?!${baseUrlEscaped.slice(1)})[^"]*)"`, 'g');
+      const srcRegex = new RegExp(`src="/((?!${baseUrlEscaped.slice(1)})[^"]*)"`, 'g');
+      content = content.replace(hrefRegex, `href="${baseUrl}/$1"`);
+      content = content.replace(srcRegex, `src="${baseUrl}/$1"`);
+    }
+    return content;
+  });
+
   eleventyConfig.addShortcode("personTile", function(title, person, id) {
     const templatepath = "src/_includes/components/person-tile.njk";
     const template = fs.readFileSync(templatepath, "utf8");
@@ -60,7 +90,8 @@ module.exports = function(eleventyConfig) {
     return env.renderString(template, {
       title,
       person,
-      id
+      id,
+      site: { baseUrl: process.env.BASE_URL || "" }
     });
   });
 
