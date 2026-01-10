@@ -114,10 +114,12 @@ jobs:
         run: npm ci
 
       - name: Build with Eleventy
+        env:
+          BASE_URL: /website
         run: |
-          # Build with pathPrefix for GitHub Pages (repo name as subdirectory)
-          npx eleventy --pathprefix="/website/"
-          echo "✓ Site built successfully"
+          # Build with BASE_URL set for GitHub Pages (repo name as subdirectory)
+          npx eleventy
+          echo "✓ Site built successfully with BASE_URL=/website"
 
       - name: Add robots.txt to prevent search indexing
         run: |

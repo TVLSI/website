@@ -14,9 +14,9 @@
   <title>{% if title %}{{ title }}{% endif %}</title>
   <meta name="description" content="{{ description or 'IEEE Transactions On Very Large Scale Integration (VLSI) Systems' }}">
   <meta name="keywords" content="{{ keywords or 'TVLSI, IEEE, Solid-State, Circuits, Systems, Society, microelectronic, wafer, multichip, computing' }}">
-  <link rel="stylesheet" href="/css/site.css">
-  <link rel="stylesheet" href="/css/nav.css">
-  <link rel="stylesheet" href="/css/person-grid.css">
+  <link rel="stylesheet" href="{{ site.baseUrl }}/css/site.css">
+  <link rel="stylesheet" href="{{ site.baseUrl }}/css/nav.css">
+  <link rel="stylesheet" href="{{ site.baseUrl }}/css/person-grid.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   {% block head %}{% endblock %}
 </head>
@@ -36,6 +36,6 @@
     <!-- Footer goes inside the container -->
     {% include "partials/footer.njk" %}
   </div>
-  <script src="/js/person-modal.js"></script>
+  <script src="{{ site.baseUrl }}/js/person-modal.js"></script>
 </body>
 </html>

@@ -2,6 +2,11 @@ const fs = require("fs");
 const nunjucks = require("nunjucks");
 
 module.exports = function(eleventyConfig) {
+  // Add global site configuration (supports BASE_URL env var for GitHub Pages)
+  eleventyConfig.addGlobalData("site", {
+    baseUrl: process.env.BASE_URL || ""
+  });
+
   // Properly map assets to their correct destination folders
   eleventyConfig.addPassthroughCopy({ "assets/images": "images" });
   eleventyConfig.addPassthroughCopy({ "assets/pdfs": "pdfs" });

@@ -16,7 +16,7 @@ templateEngineOverride: njk,html
 
 <div class="year-navigation">
 {%- for y in years -%}
-  <span class="year-item"><a class="year-button{% if y == year %} active{% endif %}" href="/recent-issues/{{ y }}/">{{ y }}</a>{% if not loop.last %}<span class="year-separator">|</span>{% endif %}</span>
+  <span class="year-item"><a class="year-button{% if y == year %} active{% endif %}" href="{{ site.baseUrl }}/recent-issues/{{ y }}/">{{ y }}</a>{% if not loop.last %}<span class="year-separator">|</span>{% endif %}</span>
 {%- endfor -%}
 </div>
 

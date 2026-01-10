@@ -4,13 +4,13 @@
       <a href="http://ieeexplore.ieee.org/xpl/tocresult.jsp?isnumber={{ issue.isnumber }}" class="issue-link" target="_blank" rel="noopener noreferrer">
         <div class="issue-box">
           <div class="issue-cover">
-            <img src="/images/sample.jpg" alt="Cover for Vol. {{ issue.volume }} Issue {{ issue.issue }}" class="issue-image">
+            <img src="{{ site.baseUrl }}/images/sample.jpg" alt="Cover for Vol. {{ issue.volume }} Issue {{ issue.issue }}" class="issue-image">
             <div class="issue-overlay">
               <span class="issue-volume">Vol. {{ issue.volume }}</span>
               <span class="issue-number">Issue {{ issue.issue }}</span>
             </div>
             {% if issue.is_new is defined and issue.is_new %}
-              <img src="/images/new.gif" alt="New!" class="new-badge">
+              <img src="{{ site.baseUrl }}/images/new.gif" alt="New!" class="new-badge">
             {% endif %}
           </div>
           <div class="issue-text">

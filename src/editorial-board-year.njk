@@ -18,7 +18,7 @@ templateEngineOverride: njk,html
 {%- set years = editorialBoard | keys | sortYearsDesc -%}
 {%- for y in years -%}
 {%- set thisYearRange = y + "-" + (y | int + 1) -%}
-<span class="year-item"><a class="year-button{% if y == year %} active{% endif %}" href="/editorial-board/{{ thisYearRange }}/">{{ thisYearRange }}</a>{%- if not loop.last %}<span class="year-separator">|</span>{% endif -%}</span>
+<span class="year-item"><a class="year-button{% if y == year %} active{% endif %}" href="{{ site.baseUrl }}/editorial-board/{{ thisYearRange }}/">{{ thisYearRange }}</a>{%- if not loop.last %}<span class="year-separator">|</span>{% endif -%}</span>
 {%- endfor -%}
 </div>
 <h2>Editorial Board: {{ yearRange }}</h2>
