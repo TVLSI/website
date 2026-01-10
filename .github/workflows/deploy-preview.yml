@@ -139,6 +139,12 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+      - name: Wait for GitHub Pages propagation
+        run: |
+          echo "Waiting 10 seconds for GitHub Pages to propagate..."
+          sleep 10
+          echo "✓ Propagation delay complete"
+
       - name: Comment on source PR with preview URL
         uses: actions/github-script@v7
         with:
@@ -156,7 +162,7 @@ jobs:
             **Branch:** \`${{ env.DATA_BRANCH }}\`
             **Commit:** \`${{ github.event.client_payload.sha }}\`
             
-            > **Note:** This preview will be replaced if another PR runs \`/preview\`.`;
+            > **Note:** This preview will be replaced if another PR runs \`/preview\`. If the page shows 404, wait a few seconds and refresh.`;
             
             const [owner, repo] = '${{ env.DATA_REPO }}'.split('/');
             await github.rest.issues.createComment({
@@ -178,6 +184,27 @@ jobs:
             The preview deployment failed. Please check the [workflow run](${runUrl}) for details.
             
             **Branch:** \`${{ env.DATA_BRANCH }}\``;
+            
+            const [owner, repo] = '${{ env.DATA_REPO }}'.split('/');
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: ${{ env.SOURCE_PR }},
+              body: body
+            });
+
+      - name: Handle cancellation
+        if: cancelled()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.DATA_REPO_TOKEN }}
+          script: |
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = `⚠️ **Preview Cancelled**
+            
+            This preview deployment was cancelled (likely by a newer \`/preview\` request).
+            
+            Check the [workflow run](${runUrl}) for details.`;
             
             const [owner, repo] = '${{ env.DATA_REPO }}'.split('/');
             await github.rest.issues.createComment({
