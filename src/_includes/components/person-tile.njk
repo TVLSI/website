@@ -45,7 +45,7 @@
   {% if isPastEic and tileTitle %}
     <div class="person-role person-role-top">{{ tileTitle }}</div>
   {% endif %}
-  <img src="/{{ personImage }}" alt="{{ person.first_name }} {{ person.last_name }}">
+  <img src="{{ site.baseUrl }}/{{ personImage }}" alt="{{ person.first_name }} {{ person.last_name }}">
   <div class="person-info">
     <strong>{{ person.first_name }} {{ person.last_name }}</strong>
     {% if roleLabel %}
@@ -83,7 +83,7 @@
     <div class="person-card">
       <div class="person-flex">
         <div class="person-photo">
-          <img src="/{{ personImage }}" alt="{{ person.first_name }} {{ person.last_name }}">
+          <img src="{{ site.baseUrl }}/{{ personImage }}" alt="{{ person.first_name }} {{ person.last_name }}">
           
           <div class="person-links">
             {% if person.emails %}
