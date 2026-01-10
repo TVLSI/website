@@ -115,8 +115,15 @@ jobs:
 
       - name: Build with Eleventy
         run: |
-          npx eleventy
+          # Build with pathPrefix for GitHub Pages (repo name as subdirectory)
+          npx eleventy --pathprefix="/website/"
           echo "✓ Site built successfully"
+
+      - name: Add robots.txt to prevent search indexing
+        run: |
+          echo "User-agent: *" > _site/robots.txt
+          echo "Disallow: /" >> _site/robots.txt
+          echo "✓ Added robots.txt to block search engines"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
