@@ -162,7 +162,8 @@ jobs:
             **Branch:** \`${{ env.DATA_BRANCH }}\`
             **Commit:** \`${{ github.event.client_payload.sha }}\`
             
-            > **Note:** This preview will be replaced if another PR runs \`/preview\`. If the page shows 404, wait a few seconds and refresh.`;
+            > **Next:** Use \`&#47;deploy\` to mark for production deployment, then merge.
+            > **Note:** This preview will be replaced if another PR runs \`&#47;preview\`. If the page shows 404, wait a few seconds and refresh.`;
             
             const [owner, repo] = '${{ env.DATA_REPO }}'.split('/');
             await github.rest.issues.createComment({

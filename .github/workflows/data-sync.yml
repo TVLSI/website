@@ -140,14 +140,14 @@ jobs:
             
             ---
             
-            ### Next Steps
+            ### Available Commands
             
             **👉 [Go to website-data PR #${{ env.SOURCE_PR }}](https://github.com/${{ env.DATA_REPO }}/pull/${{ env.SOURCE_PR }})** to run commands:
             
             | Command | Description |
             |---------|-------------|
-            | \`/preview\` | Build and deploy to GitHub Pages for review |
-            | \`/deploy\` | Mark for production deployment on merge |
+            | \`&#47;preview\` | Build and deploy to GitHub Pages for review |
+            | \`&#47;deploy\` | Mark for production deployment on merge |
             
             > **Note:** Data generation happens during preview/deploy, not in this PR.
             `,
@@ -182,12 +182,13 @@ jobs:
             A corresponding PR has been created in the Website repository:
             **[TVLSI/website#${prNumber}](https://github.com/TVLSI/website/pull/${prNumber})**
             
-            ### Next Steps
-            - Comment \`/preview\` to build and deploy a preview to GitHub Pages
-            - Comment \`/deploy\` to mark for production deployment on merge
-            - Merge this PR to trigger auto-merge of the Website PR
+            ### Available Commands
+            Comment on this PR (website-data) to run:
+            - \`&#47;preview\` - Build and deploy a preview to GitHub Pages
+            - \`&#47;deploy\` - Mark for production deployment on merge
+            - \`&#47;status\` - Check current preview/deploy status
             
-            > **Note:** Data generation happens when you run \`/preview\` or deploy, not during PR sync.`
+            > **Note:** Merge this PR to trigger auto-merge of the Website PR.`
               : `🔄 **Website PR Updated**
             
             The Website PR branch has been updated:
