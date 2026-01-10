@@ -9,7 +9,7 @@ layout: base.njk
 
 <script>
   // Redirect to the latest year (dynamically)
-  window.location.href = '/recent-issues/{{ latestYearRange }}/';
+  window.location.href = '{{ site.baseUrl }}/recent-issues/{{ latestYearRange }}/';
 </script>
 
 <p>Redirecting to the most recent issues...</p>

@@ -8,7 +8,7 @@ layout: base.njk
 
 <script>
   // Redirect to the latest year (dynamically)
-  window.location.href = '/top-downloads/{{ latestYear }}/';
+  window.location.href = '{{ site.baseUrl }}/top-downloads/{{ latestYear }}/';
 </script>
 
 <p>Redirecting to the latest Top 25 downloads...</p>
