@@ -1,0 +1,176 @@
+# Deploy Preview to GitHub Pages
+#
+# Triggered by a /preview command on a website-data PR.
+# Clones website-data at the PR branch, runs generation scripts,
+# builds the site with Eleventy, and deploys to GitHub Pages.
+#
+# See website-data/docs/AUTOMATION.md for full documentation.
+#
+# Required secrets:
+#   DATA_REPO_TOKEN - PAT with repo access to TVLSI/website-data
+
+name: Deploy Preview
+
+on:
+  repository_dispatch:
+    types: [preview-request]
+
+# Required for GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one deployment at a time
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+env:
+  DATA_REPO: TVLSI/website-data
+  DATA_BRANCH: ${{ github.event.client_payload.branch }}
+  SOURCE_PR: ${{ github.event.client_payload.pr_number }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Log preview request
+        run: |
+          echo "=== Preview Request ==="
+          echo "Source PR: #${{ env.SOURCE_PR }}"
+          echo "Source Branch: ${{ env.DATA_BRANCH }}"
+          echo "Triggered by: ${{ github.event.client_payload.sender }}"
+          echo "======================="
+
+      - name: Checkout Website repository
+        uses: actions/checkout@v4
+
+      - name: Clone website-data at PR branch
+        run: |
+          git clone --depth 1 --branch ${{ env.DATA_BRANCH }} \
+            https://x-access-token:${{ secrets.DATA_REPO_TOKEN }}@github.com/${{ env.DATA_REPO }}.git \
+            website-data
+          echo "✓ Cloned website-data at branch ${{ env.DATA_BRANCH }}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          cd website-data
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+            echo "✓ Installed Python dependencies"
+          fi
+
+      - name: Run data generation scripts
+        run: |
+          cd website-data
+          
+          # Run update_eb.py to process member data
+          if [ -f scripts/update_eb.py ]; then
+            echo "Running update_eb.py..."
+            python scripts/update_eb.py
+            echo "✓ Completed update_eb.py"
+          fi
+          
+          # Run create_downloads_file.py to process downloads data
+          if [ -f scripts/create_downloads_file.py ]; then
+            echo "Running create_downloads_file.py..."
+            python scripts/create_downloads_file.py
+            echo "✓ Completed create_downloads_file.py"
+          fi
+          
+          echo "✓ All generation scripts completed"
+
+      - name: Copy generated data to Website
+        run: |
+          # Copy JSON files
+          mkdir -p data
+          cp website-data/generated-data/*.json data/
+          echo "✓ Copied JSON files"
+          
+          # Copy member images
+          mkdir -p assets/images/eb
+          if [ -d website-data/generated-data/images/eb ]; then
+            cp -r website-data/generated-data/images/eb/* assets/images/eb/
+            echo "✓ Copied member images"
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build with Eleventy
+        run: |
+          npx eleventy
+          echo "✓ Site built successfully"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Comment on source PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.DATA_REPO_TOKEN }}
+          script: |
+            const url = '${{ steps.deployment.outputs.page_url }}';
+            
+            const body = `🚀 **Preview Deployed**
+            
+            Your preview is ready at:
+            **${url}**
+            
+            ---
+            
+            **Branch:** \`${{ env.DATA_BRANCH }}\`
+            **Commit:** \`${{ github.event.client_payload.sha }}\`
+            
+            > **Note:** This preview will be replaced if another PR runs \`/preview\`.`;
+            
+            await github.rest.issues.createComment({
+              owner: '${{ env.DATA_REPO }}'.split('/')[0],
+              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              issue_number: ${{ env.SOURCE_PR }},
+              body: body
+            });
+
+      - name: Handle failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.DATA_REPO_TOKEN }}
+          script: |
+            const body = `❌ **Preview Failed**
+            
+            The preview deployment failed. Please check the [workflow run](https://github.com/TVLSI/website/actions) for details.
+            
+            **Branch:** \`${{ env.DATA_BRANCH }}\``;
+            
+            await github.rest.issues.createComment({
+              owner: '${{ env.DATA_REPO }}'.split('/')[0],
+              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              issue_number: ${{ env.SOURCE_PR }},
+              body: body
+            });

@@ -1,0 +1,263 @@
+# Deploy to Production via SFTP
+#
+# This workflow deploys the website to production when:
+# 1. A push to main occurs (from merged PR)
+# 2. The merged PR was from a data sync branch with deploy-on-merge label
+#
+# See website-data/docs/AUTOMATION.md for full documentation.
+#
+# Required secrets:
+#   DATA_REPO_TOKEN - PAT with repo access to TVLSI/website-data
+#   SFTP_HOST       - Production server hostname
+#   SFTP_USERNAME   - SFTP login username
+#   SFTP_PASSWORD   - SFTP login password
+#   SFTP_PATH       - Remote directory path
+#   SFTP_PORT       - (Optional) SFTP port, defaults to 22
+
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+  # Also allow manual triggering
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment even without deploy label'
+        type: boolean
+        default: false
+
+env:
+  DATA_REPO: TVLSI/website-data
+
+jobs:
+  check-deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      pr_number: ${{ steps.check.outputs.pr_number }}
+    
+    steps:
+      - name: Check if this is a manual force deploy
+        if: github.event_name == 'workflow_dispatch' && inputs.force_deploy
+        id: manual
+        run: |
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+          echo "pr_number=" >> $GITHUB_OUTPUT
+          echo "Manual force deploy requested"
+
+      - name: Check for data sync merge
+        if: github.event_name == 'push'
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Find the PR that was just merged
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'closed',
+              sort: 'updated',
+              direction: 'desc',
+              per_page: 10
+            });
+            
+            // Find a recently merged PR from a data/ branch
+            const dataPR = prs.find(pr => 
+              pr.merged_at && 
+              pr.head.ref.startsWith('data/')
+            );
+            
+            if (!dataPR) {
+              console.log('No recent data sync PR found');
+              core.setOutput('should_deploy', 'false');
+              return;
+            }
+            
+            console.log(`Found data PR: #${dataPR.number} from branch ${dataPR.head.ref}`);
+            
+            // Check if it had the deploy label
+            const hasDeployLabel = dataPR.labels.some(label => label.name === 'deploy-on-merge');
+            
+            if (!hasDeployLabel) {
+              console.log('PR does not have deploy-on-merge label, skipping deployment');
+              core.setOutput('should_deploy', 'false');
+              return;
+            }
+            
+            console.log('PR has deploy-on-merge label, will deploy');
+            core.setOutput('should_deploy', 'true');
+            core.setOutput('pr_number', dataPR.number);
+
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    needs: check-deploy
+    if: needs.check-deploy.outputs.should_deploy == 'true'
+    
+    steps:
+      - name: Log deployment
+        run: |
+          echo "=== Production Deployment ==="
+          echo "Triggered by: ${{ github.event_name }}"
+          if [ -n "${{ needs.check-deploy.outputs.pr_number }}" ]; then
+            echo "Related PR: #${{ needs.check-deploy.outputs.pr_number }}"
+          fi
+          echo "============================="
+
+      - name: Checkout Website repository
+        uses: actions/checkout@v4
+
+      - name: Clone website-data main branch
+        run: |
+          git clone --depth 1 --branch main \
+            https://x-access-token:${{ secrets.DATA_REPO_TOKEN }}@github.com/${{ env.DATA_REPO }}.git \
+            website-data
+          echo "✓ Cloned website-data main branch"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          cd website-data
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+            echo "✓ Installed Python dependencies"
+          fi
+
+      - name: Run data generation scripts
+        run: |
+          cd website-data
+          
+          # Run update_eb.py to process member data
+          if [ -f scripts/update_eb.py ]; then
+            echo "Running update_eb.py..."
+            python scripts/update_eb.py
+            echo "✓ Completed update_eb.py"
+          fi
+          
+          # Run create_downloads_file.py to process downloads data
+          if [ -f scripts/create_downloads_file.py ]; then
+            echo "Running create_downloads_file.py..."
+            python scripts/create_downloads_file.py
+            echo "✓ Completed create_downloads_file.py"
+          fi
+          
+          echo "✓ All generation scripts completed"
+
+      - name: Copy generated data to Website
+        run: |
+          # Copy JSON files
+          mkdir -p data
+          cp website-data/generated-data/*.json data/
+          echo "✓ Copied JSON files"
+          
+          # Copy member images
+          mkdir -p assets/images/eb
+          if [ -d website-data/generated-data/images/eb ]; then
+            cp -r website-data/generated-data/images/eb/* assets/images/eb/
+            echo "✓ Copied member images"
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build with Eleventy
+        run: |
+          npx eleventy
+          echo "✓ Site built successfully"
+
+      - name: Install lftp for SFTP deployment
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Deploy to production via SFTP
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          SFTP_PATH: ${{ secrets.SFTP_PATH }}
+        run: |
+          # Use port 22 if SFTP_PORT is not set
+          PORT="${SFTP_PORT:-22}"
+          
+          echo "Deploying to ${SFTP_HOST}:${PORT}${SFTP_PATH}"
+          
+          lftp -u "${SFTP_USERNAME},${SFTP_PASSWORD}" \
+            -e "set sftp:auto-confirm yes; set ssl:verify-certificate no; mirror -R --verbose ./_site/ ${SFTP_PATH}; quit" \
+            sftp://${SFTP_HOST}:${PORT}
+          
+          echo "✓ SFTP deployment complete"
+
+      - name: Comment on source PR (if applicable)
+        if: needs.check-deploy.outputs.pr_number
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.DATA_REPO_TOKEN }}
+          script: |
+            // Find the source website-data PR number from the Website PR
+            const websitePR = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: ${{ needs.check-deploy.outputs.pr_number }}
+            });
+            
+            // Extract source PR number from the PR body or branch name
+            const branch = websitePR.data.head.ref;
+            const match = branch.match(/^data\/(.+)$/);
+            if (!match) {
+              console.log('Could not extract source branch from: ' + branch);
+              return;
+            }
+            
+            // We need to find the source PR in website-data
+            // Look for it by searching closed PRs with matching branch
+            const sourceBranch = match[1];
+            const { data: sourcePRs } = await github.rest.pulls.list({
+              owner: '${{ env.DATA_REPO }}'.split('/')[0],
+              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              state: 'closed',
+              head: `TVLSI:${sourceBranch}`,
+              per_page: 5
+            });
+            
+            if (sourcePRs.length === 0) {
+              console.log('Could not find source PR for branch: ' + sourceBranch);
+              return;
+            }
+            
+            const sourcePR = sourcePRs[0];
+            
+            await github.rest.issues.createComment({
+              owner: '${{ env.DATA_REPO }}'.split('/')[0],
+              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              issue_number: sourcePR.number,
+              body: `✅ **Production Deployment Complete**\n\nThe changes have been deployed to production via SFTP.\n\n**Deployed at:** ${new Date().toISOString()}`
+            });
+
+      - name: Handle deployment failure
+        if: failure()
+        run: |
+          echo "::error::Production deployment failed!"
+          echo "Please check the SFTP configuration and credentials."
+
+  skip-deploy:
+    runs-on: ubuntu-latest
+    needs: check-deploy
+    if: needs.check-deploy.outputs.should_deploy != 'true'
+    
+    steps:
+      - name: Log skip
+        run: |
+          echo "Skipping production deployment - no deploy-on-merge label found"
+          echo "To deploy to production, use /deploy command on the website-data PR before merging"
