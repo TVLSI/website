@@ -28,6 +28,11 @@ on:
         type: boolean
         default: false
 
+# Grant necessary permissions
+permissions:
+  contents: read
+  pull-requests: read
+
 env:
   DATA_REPO: TVLSI/website-data
 
@@ -35,8 +40,8 @@ jobs:
   check-deploy:
     runs-on: ubuntu-latest
     outputs:
-      should_deploy: ${{ steps.check.outputs.should_deploy }}
-      pr_number: ${{ steps.check.outputs.pr_number }}
+      should_deploy: ${{ steps.manual.outputs.should_deploy || steps.check.outputs.should_deploy }}
+      pr_number: ${{ steps.manual.outputs.pr_number || steps.check.outputs.pr_number }}
     
     steps:
       - name: Check if this is a manual force deploy
@@ -63,9 +68,11 @@ jobs:
               per_page: 10
             });
             
-            // Find a recently merged PR from a data/ branch
+            // Find a recently merged PR from a data/ branch (within last 5 minutes)
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
             const dataPR = prs.find(pr => 
               pr.merged_at && 
+              new Date(pr.merged_at) > fiveMinutesAgo &&
               pr.head.ref.startsWith('data/')
             );
             
@@ -223,11 +230,12 @@ jobs:
             // We need to find the source PR in website-data
             // Look for it by searching closed PRs with matching branch
             const sourceBranch = match[1];
+            const [dataOwner, dataRepo] = '${{ env.DATA_REPO }}'.split('/');
             const { data: sourcePRs } = await github.rest.pulls.list({
-              owner: '${{ env.DATA_REPO }}'.split('/')[0],
-              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              owner: dataOwner,
+              repo: dataRepo,
               state: 'closed',
-              head: `TVLSI:${sourceBranch}`,
+              head: `${dataOwner}:${sourceBranch}`,
               per_page: 5
             });
             
@@ -239,8 +247,8 @@ jobs:
             const sourcePR = sourcePRs[0];
             
             await github.rest.issues.createComment({
-              owner: '${{ env.DATA_REPO }}'.split('/')[0],
-              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              owner: dataOwner,
+              repo: dataRepo,
               issue_number: sourcePR.number,
               body: `✅ **Production Deployment Complete**\n\nThe changes have been deployed to production via SFTP.\n\n**Deployed at:** ${new Date().toISOString()}`
             });

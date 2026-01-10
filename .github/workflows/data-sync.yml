@@ -203,7 +203,7 @@ jobs:
     if: github.event.client_payload.action == 'merged'
     
     outputs:
-      has_deploy_label: ${{ steps.check-label.outputs.has_deploy_label }}
+      has_deploy_label: ${{ steps.check-label.outputs.has_deploy_label || 'false' }}
       pr_number: ${{ steps.find-pr.outputs.pr_number }}
     
     steps:
@@ -223,6 +223,7 @@ jobs:
             
             if (prs.length === 0) {
               console.log('No open PR found for branch: ' + targetBranch);
+              core.setOutput('pr_number', '');
               return null;
             }
             

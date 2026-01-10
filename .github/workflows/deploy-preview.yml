@@ -149,9 +149,10 @@ jobs:
             
             > **Note:** This preview will be replaced if another PR runs \`/preview\`.`;
             
+            const [owner, repo] = '${{ env.DATA_REPO }}'.split('/');
             await github.rest.issues.createComment({
-              owner: '${{ env.DATA_REPO }}'.split('/')[0],
-              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              owner,
+              repo,
               issue_number: ${{ env.SOURCE_PR }},
               body: body
             });
@@ -162,15 +163,17 @@ jobs:
         with:
           github-token: ${{ secrets.DATA_REPO_TOKEN }}
           script: |
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const body = `❌ **Preview Failed**
             
-            The preview deployment failed. Please check the [workflow run](https://github.com/TVLSI/website/actions) for details.
+            The preview deployment failed. Please check the [workflow run](${runUrl}) for details.
             
             **Branch:** \`${{ env.DATA_BRANCH }}\``;
             
+            const [owner, repo] = '${{ env.DATA_REPO }}'.split('/');
             await github.rest.issues.createComment({
-              owner: '${{ env.DATA_REPO }}'.split('/')[0],
-              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              owner,
+              repo,
               issue_number: ${{ env.SOURCE_PR }},
               body: body
             });
