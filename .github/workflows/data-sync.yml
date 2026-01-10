@@ -169,6 +169,56 @@ jobs:
             echo "pr_number=${{ steps.create-pr.outputs.result }}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Sync deploy label from source PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.DATA_REPO_TOKEN }}
+          script: |
+            const websitePRNumber = parseInt('${{ steps.get-pr-number.outputs.pr_number }}');
+            
+            // Check if source PR has deploy-on-merge label
+            const { data: sourcePR } = await github.rest.pulls.get({
+              owner: '${{ env.DATA_REPO }}'.split('/')[0],
+              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              pull_number: ${{ env.SOURCE_PR }}
+            });
+            
+            const hasDeployLabel = sourcePR.labels.some(label => label.name === 'deploy-on-merge');
+            
+            // Get current labels on Website PR
+            const { data: websitePR } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: websitePRNumber
+            });
+            
+            const websiteHasDeployLabel = websitePR.labels.some(label => label.name === 'deploy-on-merge');
+            
+            // Sync label state
+            if (hasDeployLabel && !websiteHasDeployLabel) {
+              console.log('Adding deploy-on-merge label to Website PR');
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: websitePRNumber,
+                labels: ['deploy-on-merge']
+              });
+            } else if (!hasDeployLabel && websiteHasDeployLabel) {
+              console.log('Removing deploy-on-merge label from Website PR');
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: websitePRNumber,
+                  name: 'deploy-on-merge'
+                });
+              } catch (e) {
+                console.log('Label might not exist, ignoring');
+              }
+            } else {
+              console.log('Deploy label already in sync');
+            }
+
       - name: Comment on source PR
         uses: actions/github-script@v7
         with:
@@ -335,12 +385,38 @@ jobs:
     if: needs.handle-merge.outputs.has_deploy_label == 'true'
     
     steps:
-      - name: Trigger production deployment
+      - name: Log deployment status
         run: |
-          echo "Production deployment triggered!"
-          echo "This will invoke the deploy-production workflow"
+          echo "=== Production Deployment Status ==="
+          echo "Deploy label detected: true"
+          echo "Website PR merged: #${{ needs.handle-merge.outputs.pr_number }}"
+          echo "The deploy-production workflow should trigger from the push to main"
+          echo "Check: https://github.com/${{ github.repository }}/actions/workflows/deploy-production.yml"
+          echo "===================================="
         # The deploy-production workflow is triggered by push to main,
         # which happens when the PR is merged above
+      
+      - name: Wait for deploy workflow to start
+        run: |
+          echo "Waiting 10 seconds for deploy-production workflow to start..."
+          sleep 10
+      
+      - name: Comment deployment status on source PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.DATA_REPO_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: '${{ env.DATA_REPO }}'.split('/')[0],
+              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              issue_number: ${{ env.SOURCE_PR }},
+              body: `🚀 **Production Deployment Started**
+            
+            The production deployment workflow is running. Check the status here:
+            **[View Deployment Logs](https://github.com/${{ github.repository }}/actions/workflows/deploy-production.yml)**
+            
+            > This typically takes 2-3 minutes to complete.`
+            });
 
   # Handle PR closed without merge - cleanup
   handle-close:
