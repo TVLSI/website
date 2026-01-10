@@ -142,11 +142,14 @@ jobs:
             
             ### Next Steps
             
-            Comment on the **website-data PR** to:
-            - \`/preview\` - Build and deploy to GitHub Pages for review
-            - \`/deploy\` - Mark for production deployment on merge
+            **👉 [Go to website-data PR #${{ env.SOURCE_PR }}](https://github.com/${{ env.DATA_REPO }}/pull/${{ env.SOURCE_PR }})** to run commands:
             
-            Data generation happens during preview/deploy, not in this PR.
+            | Command | Description |
+            |---------|-------------|
+            | \`/preview\` | Build and deploy to GitHub Pages for review |
+            | \`/deploy\` | Mark for production deployment on merge |
+            
+            > **Note:** Data generation happens during preview/deploy, not in this PR.
             `,
               head: '${{ env.TARGET_BRANCH }}',
               base: 'main'
