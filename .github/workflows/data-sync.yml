@@ -82,7 +82,8 @@ jobs:
           echo "TVLSI/website-data@${{ env.DATA_BRANCH }}" > .use-tvlsi-data
           echo "✓ Created .use-tvlsi-data pointing to branch: ${{ env.DATA_BRANCH }}"
           
-          git add .use-tvlsi-data
+          # Use -f to force add in case .gitignore has this file (it shouldn't, but just in case)
+          git add -f .use-tvlsi-data
           
           if git diff --staged --quiet; then
             echo "No changes to commit"
