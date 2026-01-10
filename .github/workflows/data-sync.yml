@@ -385,23 +385,32 @@ jobs:
     if: needs.handle-merge.outputs.has_deploy_label == 'true'
     
     steps:
-      - name: Log deployment status
+      - name: Log deployment trigger
         run: |
-          echo "=== Production Deployment Status ==="
+          echo "=== Triggering Production Deployment ==="
           echo "Deploy label detected: true"
           echo "Website PR merged: #${{ needs.handle-merge.outputs.pr_number }}"
-          echo "The deploy-production workflow should trigger from the push to main"
-          echo "Check: https://github.com/${{ github.repository }}/actions/workflows/deploy-production.yml"
-          echo "===================================="
-        # The deploy-production workflow is triggered by push to main,
-        # which happens when the PR is merged above
-      
-      - name: Wait for deploy workflow to start
-        run: |
-          echo "Waiting 10 seconds for deploy-production workflow to start..."
-          sleep 10
-      
-      - name: Comment deployment status on source PR
+          echo "Source PR: #${{ env.SOURCE_PR }}"
+          echo "========================================"
+
+      - name: Trigger deploy-production workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'deploy-production',
+              client_payload: {
+                source_pr: ${{ env.SOURCE_PR }},
+                pr_title: ${{ toJson(github.event.client_payload.pr_title) }},
+                sender: '${{ github.event.client_payload.sender }}',
+                website_pr: ${{ needs.handle-merge.outputs.pr_number }}
+              }
+            });
+            console.log('✓ Dispatched deploy-production event');
+
+      - name: Comment deployment triggered on source PR
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.DATA_REPO_TOKEN }}
@@ -410,12 +419,12 @@ jobs:
               owner: '${{ env.DATA_REPO }}'.split('/')[0],
               repo: '${{ env.DATA_REPO }}'.split('/')[1],
               issue_number: ${{ env.SOURCE_PR }},
-              body: `🚀 **Production Deployment Started**
+              body: `🚀 **Production Deployment Triggered**
             
-            The production deployment workflow is running. Check the status here:
+            The production deployment workflow has been started. Track progress here:
             **[View Deployment Logs](https://github.com/${{ github.repository }}/actions/workflows/deploy-production.yml)**
             
-            > This typically takes 2-3 minutes to complete.`
+            You will receive another comment when the deployment completes (or fails).`
             });
 
   # Handle PR closed without merge - cleanup
