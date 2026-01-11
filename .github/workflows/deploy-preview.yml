@@ -50,7 +50,7 @@ jobs:
           echo "======================="
 
       - name: Checkout Website repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Clone website-data at PR branch
         run: |
