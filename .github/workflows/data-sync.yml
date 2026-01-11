@@ -253,7 +253,7 @@ jobs:
               body: body
             });
 
-  # Handle PR merged - auto-merge the Website PR
+  # Handle PR merged - dispatch deploy or auto-merge based on deploy label
   handle-merge:
     runs-on: ubuntu-latest
     needs: log-event
@@ -262,6 +262,7 @@ jobs:
     outputs:
       has_deploy_label: ${{ steps.check-label.outputs.has_deploy_label || 'false' }}
       pr_number: ${{ steps.find-pr.outputs.pr_number }}
+      pr_branch: ${{ steps.find-pr.outputs.pr_branch }}
     
     steps:
       - name: Find corresponding PR
@@ -281,13 +282,15 @@ jobs:
             if (prs.length === 0) {
               console.log('No open PR found for branch: ' + targetBranch);
               core.setOutput('pr_number', '');
+              core.setOutput('pr_branch', '');
               return null;
             }
             
             const pr = prs[0];
             console.log(`Found PR #${pr.number}`);
             core.setOutput('pr_number', pr.number);
-            return pr.number;
+            core.setOutput('pr_branch', pr.head.ref);
+            return { number: pr.number, branch: pr.head.ref };
 
       - name: Check for deploy label on source PR
         id: check-label
@@ -307,8 +310,9 @@ jobs:
             core.setOutput('has_deploy_label', hasDeployLabel);
             return hasDeployLabel;
 
-      - name: Merge Website PR
-        if: steps.find-pr.outputs.pr_number
+      # If NO deploy label, merge immediately
+      - name: Merge Website PR (no deploy)
+        if: steps.find-pr.outputs.pr_number && steps.check-label.outputs.has_deploy_label != 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -328,8 +332,8 @@ jobs:
               throw e;
             }
 
-      - name: Delete branch
-        if: steps.find-pr.outputs.pr_number
+      - name: Delete branch (no deploy)
+        if: steps.find-pr.outputs.pr_number && steps.check-label.outputs.has_deploy_label != 'true'
         uses: actions/github-script@v7
         continue-on-error: true
         with:
@@ -347,33 +351,47 @@ jobs:
               console.log(`Could not delete branch: ${e.message}`);
             }
 
-      - name: Comment on source PR
-        if: steps.find-pr.outputs.pr_number
+      - name: Comment on source PR (no deploy)
+        if: steps.find-pr.outputs.pr_number && steps.check-label.outputs.has_deploy_label != 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.DATA_REPO_TOKEN }}
           script: |
-            const hasDeployLabel = '${{ steps.check-label.outputs.has_deploy_label }}' === 'true';
             const prNumber = ${{ steps.find-pr.outputs.pr_number }};
-            
-            let body = `✅ **Website PR Merged**
-            
-            The corresponding Website PR has been automatically merged:
-            **[TVLSI/website#${prNumber}](https://github.com/TVLSI/website/pull/${prNumber})**`;
-            
-            if (hasDeployLabel) {
-              body += `
-            
-            🚀 **Production deployment will now begin** (marked with \`/deploy\`)`;
-            } else {
-              body += `
-            
-            > **Note:** No production deployment will occur. Use \`/deploy\` before merging to deploy to production.`;
-            }
             
             await github.rest.issues.createComment({
               owner: '${{ env.DATA_REPO }}'.split('/')[0],
               repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              issue_number: ${{ env.SOURCE_PR }},
+              body: `✅ **Website PR Merged**
+            
+            The corresponding Website PR has been automatically merged:
+            **[TVLSI/website#${prNumber}](https://github.com/TVLSI/website/pull/${prNumber})**
+            
+            > **Note:** No production deployment triggered. Use \`/deploy\` before merging to deploy to production.`
+            });
+
+      # If deploy label, comment that deployment is starting (don't merge yet)
+      - name: Comment deployment will start (with deploy)
+        if: steps.find-pr.outputs.pr_number && steps.check-label.outputs.has_deploy_label == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.DATA_REPO_TOKEN }}
+          script: |
+            const prNumber = ${{ steps.find-pr.outputs.pr_number }};
+            
+            await github.rest.issues.createComment({
+              owner: '${{ env.DATA_REPO }}'.split('/')[0],
+              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              issue_number: ${{ env.SOURCE_PR }},
+              body: `🚀 **Production Deployment Starting**
+            
+            The Website PR will be deployed to production BEFORE merging:
+            **[TVLSI/website#${prNumber}](https://github.com/TVLSI/website/pull/${prNumber})**
+            
+            > The Website PR will only be merged if deployment succeeds.
+            > If deployment fails, both PRs will remain open for investigation.`
+            });
               issue_number: ${{ env.SOURCE_PR }},
               body: body
             });
@@ -405,7 +423,8 @@ jobs:
                 source_pr: ${{ env.SOURCE_PR }},
                 pr_title: ${{ toJson(github.event.client_payload.pr_title) }},
                 sender: '${{ github.event.client_payload.sender }}',
-                website_pr: ${{ needs.handle-merge.outputs.pr_number }}
+                website_pr: ${{ needs.handle-merge.outputs.pr_number }},
+                pr_branch: '${{ needs.handle-merge.outputs.pr_branch }}'
               }
             });
             console.log('✓ Dispatched deploy-production event');

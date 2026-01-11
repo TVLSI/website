@@ -49,13 +49,17 @@ jobs:
           echo "Triggered by: ${{ github.event_name }}"
           if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
             echo "Source PR: #${{ github.event.client_payload.source_pr }}"
+            echo "Website PR: #${{ github.event.client_payload.website_pr }}"
+            echo "PR Branch: ${{ github.event.client_payload.pr_branch }}"
             echo "PR Title: ${{ github.event.client_payload.pr_title }}"
             echo "Triggered by: ${{ github.event.client_payload.sender }}"
           fi
           echo "============================="
 
-      - name: Checkout Website repository
+      - name: Checkout Website PR branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.pr_branch || 'main' }}
 
       - name: Clone website-data main branch
         run: |
@@ -151,9 +155,16 @@ jobs:
           START_TS=$(date +%s)
           
           # --delete removes remote files that don't exist locally
+          # --no-perms disables chmod attempts (avoids permission denied errors)
+          # --verbose for detailed logging
           lftp -u "${SFTP_USERNAME},${SFTP_PASSWORD}" \
-            -e "set sftp:auto-confirm yes; set ssl:verify-certificate no; mirror -R --verbose --delete ./_site/ ${SFTP_PATH}; quit" \
+            -e "set sftp:auto-confirm yes; set ssl:verify-certificate no; mirror -R --verbose --delete --no-perms --no-umask ./_site/ ${SFTP_PATH}; quit" \
             sftp://${SFTP_HOST}:${PORT}
+          
+          if [ $? -ne 0 ]; then
+            echo "::error::SFTP upload failed. Check server permissions for ${SFTP_PATH}"
+            exit 1
+          fi
           
           END_TS=$(date +%s)
           DURATION=$((END_TS-START_TS))
@@ -172,6 +183,47 @@ jobs:
           echo "- **Duration:** ${{ steps.sftp_deploy.outputs.duration }}s" >> $GITHUB_STEP_SUMMARY
           echo "- **Run ID:** $GITHUB_RUN_ID" >> $GITHUB_STEP_SUMMARY
           echo "- **Started By:** ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.sender || github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+      # After successful deploy, merge the Website PR and delete branch
+      - name: Merge Website PR after successful deploy
+        if: github.event_name == 'repository_dispatch' && github.event.client_payload.website_pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const websitePR = ${{ github.event.client_payload.website_pr }};
+            
+            try {
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: websitePR,
+                merge_method: 'squash',
+                commit_title: `Merge data from website-data PR #${{ github.event.client_payload.source_pr }}`
+              });
+              console.log(`✓ Merged Website PR #${websitePR} after successful deployment`);
+            } catch (e) {
+              console.log(`Failed to merge PR: ${e.message}`);
+              core.setFailed('Deployment succeeded but PR merge failed');
+            }
+
+      - name: Delete Website PR branch after merge
+        if: github.event_name == 'repository_dispatch' && github.event.client_payload.pr_branch
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            const branchName = '${{ github.event.client_payload.pr_branch }}';
+            
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `heads/${branchName}`
+              });
+              console.log(`✓ Deleted branch ${branchName}`);
+            } catch (e) {
+              console.log(`Could not delete branch: ${e.message}`);
+            }
 
       - name: Comment on source PR
         if: github.event_name == 'repository_dispatch'
@@ -194,7 +246,7 @@ jobs:
               owner: dataOwner,
               repo: dataRepo,
               issue_number: sourcePR,
-              body: `✅ **Production Deployment Complete**\n\n**Uploaded:** ${files} files\n**Target:** ${host}:${port}${path}\n**Duration:** ${duration}s\n**Completed at:** ${new Date().toISOString()}\n\n**Workflow Run:** https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}\n${websitePr ? `\n**Website PR:** https://github.com/${process.env.GITHUB_REPOSITORY}/pull/${websitePr}` : ''}\n${prTitle ? `\n**Title:** ${prTitle}` : ''}`
+              body: `✅ **Production Deployment Complete**\n\n**Uploaded:** ${files} files\n**Target:** ${host}:${port}${path}\n**Duration:** ${duration}s\n**Completed at:** ${new Date().toISOString()}\n\n${websitePr ? `**Website PR #${websitePr} has been merged** ✓\n\n` : ''}**Workflow Run:** https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}${prTitle ? `\n**Title:** ${prTitle}` : ''}`
             });
 
       - name: Handle deployment failure
@@ -207,6 +259,7 @@ jobs:
             if ('${{ github.event_name }}' !== 'repository_dispatch') return;
             
             const sourcePR = ${{ github.event.client_payload.source_pr || 0 }};
+            const websitePR = ${{ github.event.client_payload.website_pr || 0 }};
             if (!sourcePR) return;
             
             const [dataOwner, dataRepo] = '${{ env.DATA_REPO }}'.split('/');
@@ -214,9 +267,38 @@ jobs:
             const port = '${{ steps.sftp_deploy.outputs.port }}';
             const path = '${{ steps.sftp_deploy.outputs.path }}';
             
+            // Reopen website-data PR
+            try {
+              await github.rest.pulls.update({
+                owner: dataOwner,
+                repo: dataRepo,
+                pull_number: sourcePR,
+                state: 'open'
+              });
+              console.log(`✓ Reopened website-data PR #${sourcePR}`);
+            } catch (e) {
+              console.log(`Could not reopen website-data PR: ${e.message}`);
+            }
+            
+            // Reopen Website PR
+            if (websitePR) {
+              try {
+                await github.rest.pulls.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: websitePR,
+                  state: 'open'
+                });
+                console.log(`✓ Reopened Website PR #${websitePR}`);
+              } catch (e) {
+                console.log(`Could not reopen Website PR: ${e.message}`);
+              }
+            }
+            
+            // Comment on source PR
             await github.rest.issues.createComment({
               owner: dataOwner,
               repo: dataRepo,
               issue_number: sourcePR,
-              body: `❌ **Production Deployment Failed**\n\n**Target:** ${host}:${port}${path}\n\nPlease check the logs:\n**[View Deployment Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**`
+              body: `❌ **Production Deployment Failed**\n\n**Target:** ${host}:${port}${path}\n\n⚠️ **Both PRs have been reopened** for investigation.\n\nPlease check the logs:\n**[View Deployment Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**\n\n${websitePR ? `**Website PR:** https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${websitePR}` : ''}`
             });
