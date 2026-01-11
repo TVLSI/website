@@ -314,9 +314,12 @@ jobs:
       - name: Merge Website PR (no deploy)
         if: steps.find-pr.outputs.pr_number && steps.check-label.outputs.has_deploy_label != 'true'
         uses: actions/github-script@v7
+        env:
+          SOURCE_PR_NUMBER: ${{ env.SOURCE_PR }}
         with:
           script: |
             const prNumber = ${{ steps.find-pr.outputs.pr_number }};
+            const sourcePRNumber = process.env.SOURCE_PR_NUMBER;
             
             try {
               await github.rest.pulls.merge({
@@ -324,7 +327,7 @@ jobs:
                 repo: context.repo.repo,
                 pull_number: prNumber,
                 merge_method: 'squash',
-                commit_title: `Merge data from website-data PR #${{ env.SOURCE_PR }}`
+                commit_title: `Merge data from website-data PR #${sourcePRNumber}`
               });
               console.log(`✓ Merged PR #${prNumber}`);
             } catch (e) {

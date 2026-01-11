@@ -191,6 +191,7 @@ jobs:
         with:
           script: |
             const websitePR = ${{ github.event.client_payload.website_pr }};
+            const sourcePR = ${{ github.event.client_payload.source_pr }};
             
             try {
               await github.rest.pulls.merge({
@@ -198,7 +199,7 @@ jobs:
                 repo: context.repo.repo,
                 pull_number: websitePR,
                 merge_method: 'squash',
-                commit_title: `Merge data from website-data PR #${{ github.event.client_payload.source_pr }}`
+                commit_title: `Merge data from website-data PR #${sourcePR}`
               });
               console.log(`✓ Merged Website PR #${websitePR} after successful deployment`);
             } catch (e) {
