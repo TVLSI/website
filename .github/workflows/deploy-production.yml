@@ -128,7 +128,15 @@ jobs:
       - name: Install lftp for SFTP deployment
         run: sudo apt-get update && sudo apt-get install -y lftp
 
+      - name: Count local site files
+        id: count_files
+        run: |
+          FILE_COUNT=$(find _site -type f | wc -l | tr -d ' ')
+          echo "Local files to upload: ${FILE_COUNT}"
+          echo "file_count=${FILE_COUNT}" >> $GITHUB_OUTPUT
+
       - name: Deploy to production via SFTP
+        id: sftp_deploy
         env:
           SFTP_HOST: ${{ secrets.SFTP_HOST }}
           SFTP_PORT: ${{ secrets.SFTP_PORT }}
@@ -140,13 +148,30 @@ jobs:
           PORT="${SFTP_PORT:-22}"
           
           echo "Deploying to ${SFTP_HOST}:${PORT}${SFTP_PATH}"
+          START_TS=$(date +%s)
           
           # --delete removes remote files that don't exist locally
           lftp -u "${SFTP_USERNAME},${SFTP_PASSWORD}" \
             -e "set sftp:auto-confirm yes; set ssl:verify-certificate no; mirror -R --verbose --delete ./_site/ ${SFTP_PATH}; quit" \
             sftp://${SFTP_HOST}:${PORT}
           
-          echo "✓ SFTP deployment complete"
+          END_TS=$(date +%s)
+          DURATION=$((END_TS-START_TS))
+          echo "✓ SFTP deployment complete in ${DURATION}s"
+          echo "duration=${DURATION}" >> $GITHUB_OUTPUT
+          echo "host=${SFTP_HOST}" >> $GITHUB_OUTPUT
+          echo "port=${PORT}" >> $GITHUB_OUTPUT
+          echo "path=${SFTP_PATH}" >> $GITHUB_OUTPUT
+
+      - name: Write deployment summary
+        run: |
+          echo "## Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Host:** ${{ steps.sftp_deploy.outputs.host }}:${{ steps.sftp_deploy.outputs.port }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Path:** ${{ steps.sftp_deploy.outputs.path }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Files Uploaded:** ${{ steps.count_files.outputs.file_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Duration:** ${{ steps.sftp_deploy.outputs.duration }}s" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run ID:** $GITHUB_RUN_ID" >> $GITHUB_STEP_SUMMARY
+          echo "- **Started By:** ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.sender || github.actor }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Comment on source PR
         if: github.event_name == 'repository_dispatch'
@@ -157,12 +182,19 @@ jobs:
           script: |
             const sourcePR = ${{ github.event.client_payload.source_pr }};
             const [dataOwner, dataRepo] = '${{ env.DATA_REPO }}'.split('/');
+            const host = '${{ steps.sftp_deploy.outputs.host }}';
+            const port = '${{ steps.sftp_deploy.outputs.port }}';
+            const path = '${{ steps.sftp_deploy.outputs.path }}';
+            const files = '${{ steps.count_files.outputs.file_count }}';
+            const duration = '${{ steps.sftp_deploy.outputs.duration }}';
+            const websitePr = ${{ github.event.client_payload.website_pr || 0 }};
+            const prTitle = ${{ toJson(github.event.client_payload.pr_title) }};
             
             await github.rest.issues.createComment({
               owner: dataOwner,
               repo: dataRepo,
               issue_number: sourcePR,
-              body: `✅ **Production Deployment Complete**\n\nThe changes have been deployed to production via SFTP.\n\n**Deployed at:** ${new Date().toISOString()}`
+              body: `✅ **Production Deployment Complete**\n\n**Uploaded:** ${files} files\n**Target:** ${host}:${port}${path}\n**Duration:** ${duration}s\n**Completed at:** ${new Date().toISOString()}\n\n**Workflow Run:** https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}\n${websitePr ? `\n**Website PR:** https://github.com/${process.env.GITHUB_REPOSITORY}/pull/${websitePr}` : ''}\n${prTitle ? `\n**Title:** ${prTitle}` : ''}`
             });
 
       - name: Handle deployment failure
@@ -178,10 +210,13 @@ jobs:
             if (!sourcePR) return;
             
             const [dataOwner, dataRepo] = '${{ env.DATA_REPO }}'.split('/');
+            const host = '${{ steps.sftp_deploy.outputs.host }}';
+            const port = '${{ steps.sftp_deploy.outputs.port }}';
+            const path = '${{ steps.sftp_deploy.outputs.path }}';
             
             await github.rest.issues.createComment({
               owner: dataOwner,
               repo: dataRepo,
               issue_number: sourcePR,
-              body: `❌ **Production Deployment Failed**\n\nThe deployment encountered an error. Please check the logs:\n**[View Deployment Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**`
+              body: `❌ **Production Deployment Failed**\n\n**Target:** ${host}:${port}${path}\n\nPlease check the logs:\n**[View Deployment Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**`
             });
