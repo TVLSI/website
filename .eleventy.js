@@ -2,9 +2,20 @@ const fs = require("fs");
 const nunjucks = require("nunjucks");
 
 module.exports = function(eleventyConfig) {
+  // Preview mode configuration (set via environment variables)
+  const isPreviewMode = process.env.PREVIEW_MODE === "true";
+  const previewInfo = {
+    branch: process.env.PREVIEW_BRANCH || "unknown",
+    pr: process.env.PREVIEW_PR || "?",
+    sha: process.env.PREVIEW_SHA || "unknown",
+    time: process.env.PREVIEW_TIME || new Date().toISOString()
+  };
+
   // Add global site configuration (supports BASE_URL env var for GitHub Pages)
   eleventyConfig.addGlobalData("site", {
-    baseUrl: process.env.BASE_URL || ""
+    baseUrl: process.env.BASE_URL || "",
+    isPreview: isPreviewMode,
+    preview: previewInfo
   });
 
   // Properly map assets to their correct destination folders
@@ -74,6 +85,76 @@ module.exports = function(eleventyConfig) {
       content = content.replace(hrefRegex, `href="${baseUrl}/$1"`);
       content = content.replace(srcRegex, `src="${baseUrl}/$1"`);
     }
+    return content;
+  });
+
+  // Transform to inject preview banner for preview deployments
+  eleventyConfig.addTransform("previewBanner", function(content, outputPath) {
+    // Only inject if in preview mode and processing HTML files
+    if (!isPreviewMode || !outputPath || !outputPath.endsWith(".html")) {
+      return content;
+    }
+
+    // Create a minimal, non-intrusive banner
+    const bannerHtml = `
+<!-- PREVIEW BANNER - Injected by Eleventy -->
+<style>
+  #preview-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(90deg, #ff6b35 0%, #f7931e 100%);
+    color: white;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 12px;
+    padding: 4px 12px;
+    z-index: 99999;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  #preview-banner strong { font-weight: 600; }
+  #preview-banner code {
+    background: rgba(255,255,255,0.2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 11px;
+  }
+  #preview-banner .preview-left { display: flex; gap: 12px; align-items: center; }
+  #preview-banner .preview-dismiss {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+  #preview-banner .preview-dismiss:hover { background: rgba(255,255,255,0.3); }
+  body { padding-top: 28px !important; }
+</style>
+<div id="preview-banner">
+  <div class="preview-left">
+    <strong>⚠️ DEVELOPER PREVIEW</strong>
+    <span>Branch: <code>${previewInfo.branch}</code></span>
+    <span>PR: <code>#${previewInfo.pr}</code></span>
+    <span>SHA: <code>${previewInfo.sha.substring(0, 7)}</code></span>
+    <span>Built: <code>${previewInfo.time}</code></span>
+  </div>
+  <button class="preview-dismiss" onclick="document.getElementById('preview-banner').style.display='none';document.body.style.paddingTop='0';">×</button>
+</div>
+<!-- END PREVIEW BANNER -->
+`;
+
+    // Inject banner right after <body> tag
+    if (content.includes('<body')) {
+      // Find the closing > of the body tag (handles <body> and <body class="...">)
+      content = content.replace(/(<body[^>]*>)/i, `$1${bannerHtml}`);
+    }
+
     return content;
   });
 

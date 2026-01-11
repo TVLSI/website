@@ -115,13 +115,24 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Build with Eleventy
+      - name: Generate preview banner info
+        id: banner
+        run: |
+          BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          echo "build_time=${BUILD_TIME}" >> $GITHUB_OUTPUT
+
+      - name: Build with Eleventy (Preview Mode)
         env:
           BASE_URL: /website
+          PREVIEW_MODE: "true"
+          PREVIEW_BRANCH: ${{ env.DATA_BRANCH }}
+          PREVIEW_PR: ${{ env.SOURCE_PR }}
+          PREVIEW_SHA: ${{ github.event.client_payload.sha || 'unknown' }}
+          PREVIEW_TIME: ${{ steps.banner.outputs.build_time }}
         run: |
           # Build with BASE_URL set for GitHub Pages (repo name as subdirectory)
           npx eleventy
-          echo "✓ Site built successfully with BASE_URL=/website"
+          echo "✓ Site built successfully with BASE_URL=/website and preview banner"
 
       - name: Add robots.txt to prevent search indexing
         run: |

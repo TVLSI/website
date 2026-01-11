@@ -1,0 +1,423 @@
+# Website Commands Handler
+#
+# Handles /preview, /deploy, and /status commands on Website PRs directly.
+# This is for website-only changes (no data changes from website-data).
+#
+# Commands:
+#   /preview       - Deploy preview to GitHub Pages
+#   /deploy        - Mark PR for production deployment on merge
+#   /deploy cancel - Remove deploy marker
+#   /status        - Show current status
+#
+# SECURITY: Only allowed users can trigger commands (public repo restriction)
+#
+# Required secrets:
+#   (None - uses GITHUB_TOKEN)
+
+name: Website Commands
+
+run-name: "${{ github.event_name == 'issue_comment' && format('Command on PR #{0}', github.event.issue.number) || format('Command on PR #{0}', github.event.pull_request.number) }}"
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  pages: write
+  id-token: write
+
+# Allow only one preview deployment at a time
+concurrency:
+  group: "pages-${{ github.event.issue.number || github.event.pull_request.number }}"
+  cancel-in-progress: false
+
+env:
+  # Users allowed to run commands (GitHub usernames, comma-separated)
+  # Add your GitHub username(s) here
+  ALLOWED_USERS: "mfleming7024,dependabot[bot]"
+
+jobs:
+  handle-command:
+    # Run on PR comments or PR body containing commands
+    if: |
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request) ||
+      (github.event_name == 'pull_request')
+    runs-on: ubuntu-latest
+    outputs:
+      command: ${{ steps.parse.outputs.command }}
+      pr_number: ${{ steps.pr.outputs.number }}
+      pr_branch: ${{ steps.pr.outputs.branch }}
+      pr_sha: ${{ steps.pr.outputs.sha }}
+      pr_title: ${{ steps.pr.outputs.title }}
+      authorized: ${{ steps.auth.outputs.authorized }}
+    
+    steps:
+      - name: Parse command
+        id: parse
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = (context.eventName === 'issue_comment' 
+              ? context.payload.comment.body 
+              : context.payload.pull_request.body || '').toLowerCase();
+            
+            let command = 'none';
+            if (body.includes('/preview')) {
+              command = 'preview';
+            } else if (body.includes('/deploy cancel') || body.includes('/deploy remove')) {
+              command = 'cancel';
+            } else if (body.includes('/deploy')) {
+              command = 'deploy';
+            } else if (body.includes('/status')) {
+              command = 'status';
+            }
+            
+            console.log(`Parsed command: ${command}`);
+            core.setOutput('command', command);
+            return command;
+
+      - name: Skip if no command
+        if: steps.parse.outputs.command == 'none'
+        run: echo "No command found, skipping"
+
+      - name: Check authorization
+        if: steps.parse.outputs.command != 'none'
+        id: auth
+        uses: actions/github-script@v7
+        env:
+          ALLOWED_USERS: ${{ env.ALLOWED_USERS }}
+        with:
+          script: |
+            const sender = context.eventName === 'issue_comment'
+              ? context.payload.comment.user.login
+              : context.payload.pull_request.user.login;
+            
+            const allowedUsers = process.env.ALLOWED_USERS.split(',').map(u => u.trim().toLowerCase());
+            const isAuthorized = allowedUsers.includes(sender.toLowerCase());
+            
+            console.log(`User: ${sender}`);
+            console.log(`Allowed users: ${allowedUsers.join(', ')}`);
+            console.log(`Authorized: ${isAuthorized}`);
+            
+            core.setOutput('authorized', isAuthorized);
+            core.setOutput('sender', sender);
+
+      - name: Reject unauthorized user
+        if: steps.parse.outputs.command != 'none' && steps.auth.outputs.authorized != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.eventName === 'issue_comment' 
+              ? context.issue.number 
+              : context.payload.pull_request.number;
+            const sender = '${{ steps.auth.outputs.sender }}';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `⛔ **Unauthorized**\n\n@${sender}, you are not authorized to run commands on this public repository.\n\nOnly repository maintainers can trigger preview and deploy commands.`
+            });
+            
+            core.setFailed(`User ${sender} is not authorized`);
+
+      - name: Get PR details
+        if: steps.parse.outputs.command != 'none' && steps.auth.outputs.authorized == 'true'
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.eventName === 'issue_comment' 
+              ? context.issue.number 
+              : context.payload.pull_request.number;
+            
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            const hasDeployLabel = pr.data.labels.some(label => label.name === 'deploy-on-merge');
+            
+            core.setOutput('number', pr.data.number);
+            core.setOutput('branch', pr.data.head.ref);
+            core.setOutput('sha', pr.data.head.sha);
+            core.setOutput('title', pr.data.title);
+            core.setOutput('state', pr.data.state);
+            core.setOutput('has_deploy_label', hasDeployLabel);
+
+      - name: Check PR is open
+        if: |
+          steps.parse.outputs.command != 'none' && 
+          steps.parse.outputs.command != 'status' &&
+          steps.auth.outputs.authorized == 'true' &&
+          steps.pr.outputs.state != 'open'
+        run: |
+          echo "::error::Cannot run commands on a closed PR"
+          exit 1
+
+      - name: Add reaction
+        if: steps.parse.outputs.command != 'none' && github.event_name == 'issue_comment' && steps.auth.outputs.authorized == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes'
+            });
+
+  # Handle /status command
+  status-command:
+    needs: handle-command
+    if: needs.handle-command.outputs.command == 'status' && needs.handle-command.outputs.authorized == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Show status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ needs.handle-command.outputs.pr_number }};
+            
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            const hasDeployLabel = pr.data.labels.some(label => label.name === 'deploy-on-merge');
+            const pagesUrl = `https://${context.repo.owner.toLowerCase()}.github.io/${context.repo.repo}/`;
+            
+            let status = `📊 **PR #${prNumber} Status**\n\n`;
+            status += `**Branch:** \`${pr.data.head.ref}\`\n`;
+            status += `**State:** ${pr.data.state}\n`;
+            status += `**Deploy on Merge:** ${hasDeployLabel ? '✅ Yes' : '❌ No'}\n\n`;
+            
+            status += `**Available Commands:**\n`;
+            status += `- \`&#47;preview\` - Deploy preview to GitHub Pages\n`;
+            status += `- \`&#47;deploy\` - Mark for production deployment\n`;
+            status += `- \`&#47;deploy cancel\` - Remove deploy marker\n`;
+            status += `- \`&#47;status\` - Show this status\n\n`;
+            
+            status += `**Preview URL:** ${pagesUrl}`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: status
+            });
+
+  # Handle /deploy command
+  deploy-command:
+    needs: handle-command
+    if: needs.handle-command.outputs.command == 'deploy' && needs.handle-command.outputs.authorized == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Get current label status
+        id: label_check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ needs.handle-command.outputs.pr_number }};
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            const hasLabel = pr.data.labels.some(label => label.name === 'deploy-on-merge');
+            core.setOutput('has_label', hasLabel);
+
+      - name: Add deploy label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ needs.handle-command.outputs.pr_number }};
+            const hasLabel = ${{ steps.label_check.outputs.has_label }};
+            
+            if (hasLabel) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: `✅ **Already marked for deployment**\n\nThis PR is already marked for production deployment. When merged, it will be deployed via SFTP.\n\nUse \`&#47;deploy cancel\` to remove this marker.`
+              });
+            } else {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                labels: ['deploy-on-merge']
+              });
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: `🚀 **Marked for Production Deployment**\n\nThis PR will be deployed to production via SFTP when merged.\n\n**Next steps:**\n- Review your changes\n- Optional: Run \`&#47;preview\` to test first\n- Merge the PR to trigger deployment\n\nUse \`&#47;deploy cancel\` to remove this marker.`
+              });
+            }
+
+  # Handle /deploy cancel command
+  cancel-command:
+    needs: handle-command
+    if: needs.handle-command.outputs.command == 'cancel' && needs.handle-command.outputs.authorized == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Get current label status
+        id: label_check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ needs.handle-command.outputs.pr_number }};
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            const hasLabel = pr.data.labels.some(label => label.name === 'deploy-on-merge');
+            core.setOutput('has_label', hasLabel);
+
+      - name: Remove deploy label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ needs.handle-command.outputs.pr_number }};
+            const hasLabel = ${{ steps.label_check.outputs.has_label }};
+            
+            if (!hasLabel) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: `ℹ️ **No deploy marker**\n\nThis PR is not marked for deployment. Nothing to cancel.`
+              });
+            } else {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  name: 'deploy-on-merge'
+                });
+              } catch (e) {
+                // Label might not exist
+              }
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: `✅ **Deploy marker removed**\n\nThis PR will no longer be deployed when merged.\n\nUse \`&#47;deploy\` to mark it for deployment again.`
+              });
+            }
+
+  # Handle /preview command - build and deploy to GitHub Pages
+  preview-command:
+    needs: handle-command
+    if: needs.handle-command.outputs.command == 'preview' && needs.handle-command.outputs.authorized == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Post starting comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ needs.handle-command.outputs.pr_number }};
+            const branch = '${{ needs.handle-command.outputs.pr_branch }}';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `🔄 **Building Preview...**\n\nBuilding preview from branch \`${branch}\`.\n\n**Workflow:** [View Progress](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID})`
+            });
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.handle-command.outputs.pr_branch }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate preview banner info
+        id: banner
+        run: |
+          BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          echo "build_time=${BUILD_TIME}" >> $GITHUB_OUTPUT
+          echo "pr_number=${{ needs.handle-command.outputs.pr_number }}" >> $GITHUB_OUTPUT
+          echo "branch=${{ needs.handle-command.outputs.pr_branch }}" >> $GITHUB_OUTPUT
+          echo "sha=${{ needs.handle-command.outputs.pr_sha }}" >> $GITHUB_OUTPUT
+
+      - name: Build with Eleventy (Preview Mode)
+        env:
+          PREVIEW_MODE: "true"
+          PREVIEW_BRANCH: ${{ steps.banner.outputs.branch }}
+          PREVIEW_PR: ${{ steps.banner.outputs.pr_number }}
+          PREVIEW_SHA: ${{ steps.banner.outputs.sha }}
+          PREVIEW_TIME: ${{ steps.banner.outputs.build_time }}
+        run: |
+          npx eleventy
+          echo "✓ Site built successfully with preview banner"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Post success comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ needs.handle-command.outputs.pr_number }};
+            const branch = '${{ needs.handle-command.outputs.pr_branch }}';
+            const sha = '${{ needs.handle-command.outputs.pr_sha }}'.substring(0, 7);
+            const buildTime = '${{ steps.banner.outputs.build_time }}';
+            const pagesUrl = '${{ steps.deployment.outputs.page_url }}';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `✅ **Preview Deployed**\n\n🔗 **Preview URL:** ${pagesUrl}\n\n| Info | Value |\n|------|-------|\n| Branch | \`${branch}\` |\n| Commit | \`${sha}\` |\n| Built | ${buildTime} |\n\n⚠️ *This is a developer preview, not the live site.*\n\n---\n\n**Next steps:**\n- Review the preview at the URL above\n- If ready, use \`&#47;deploy\` to mark for production deployment`
+            });
+
+      - name: Post failure comment
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ needs.handle-command.outputs.pr_number }};
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `❌ **Preview Build Failed**\n\nThe preview build failed. Please check the logs:\n\n**Workflow:** [View Logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID})`
+            });

@@ -1,0 +1,141 @@
+# Website Deploy on Merge
+#
+# When a Website PR with 'deploy-on-merge' label is merged,
+# this workflow triggers production deployment.
+#
+# This is for website-only changes (not triggered by website-data).
+#
+# Required secrets:
+#   SFTP_HOST, SFTP_USERNAME, SFTP_PASSWORD, SFTP_PATH, SFTP_PORT
+
+name: Website Deploy on Merge
+
+run-name: "Deploy Website PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-and-deploy:
+    # Only run if PR was merged (not just closed) AND has deploy label
+    if: |
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'deploy-on-merge')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Log deployment trigger
+        run: |
+          echo "=== Website Production Deployment ==="
+          echo "PR: #${{ github.event.pull_request.number }}"
+          echo "Title: ${{ github.event.pull_request.title }}"
+          echo "Merged by: ${{ github.event.pull_request.merged_by.login }}"
+          echo "====================================="
+
+      - name: Checkout merged code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build with Eleventy
+        run: |
+          npx eleventy
+          echo "✓ Site built successfully"
+
+      - name: Install lftp for SFTP deployment
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Count files
+        id: count_files
+        run: |
+          FILE_COUNT=$(find _site -type f | wc -l | tr -d ' ')
+          echo "Files to upload: ${FILE_COUNT}"
+          echo "file_count=${FILE_COUNT}" >> $GITHUB_OUTPUT
+
+      - name: Deploy to production via SFTP
+        id: sftp_deploy
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          SFTP_PATH: ${{ secrets.SFTP_PATH }}
+        run: |
+          PORT="${SFTP_PORT:-22}"
+          
+          echo "Deploying to ${SFTP_HOST}:${PORT}${SFTP_PATH}"
+          START_TS=$(date +%s)
+          
+          lftp -u "${SFTP_USERNAME},${SFTP_PASSWORD}" \
+            -e "set sftp:auto-confirm yes; set ssl:verify-certificate no; mirror -R --verbose --delete --no-perms --no-umask ./_site/ ${SFTP_PATH}; quit" \
+            sftp://${SFTP_HOST}:${PORT}
+          
+          if [ $? -ne 0 ]; then
+            echo "::error::SFTP upload failed"
+            exit 1
+          fi
+          
+          END_TS=$(date +%s)
+          DURATION=$((END_TS-START_TS))
+          echo "✓ SFTP deployment complete in ${DURATION}s"
+          echo "duration=${DURATION}" >> $GITHUB_OUTPUT
+          echo "host=${SFTP_HOST}" >> $GITHUB_OUTPUT
+          echo "port=${PORT}" >> $GITHUB_OUTPUT
+          echo "path=${SFTP_PATH}" >> $GITHUB_OUTPUT
+
+      - name: Write deployment summary
+        run: |
+          echo "## Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **PR:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Title:** ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Host:** ${{ steps.sftp_deploy.outputs.host }}:${{ steps.sftp_deploy.outputs.port }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Path:** ${{ steps.sftp_deploy.outputs.path }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Files Uploaded:** ${{ steps.count_files.outputs.file_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Duration:** ${{ steps.sftp_deploy.outputs.duration }}s" >> $GITHUB_STEP_SUMMARY
+          echo "- **Merged By:** ${{ github.event.pull_request.merged_by.login }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment on PR with success
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ github.event.pull_request.number }};
+            const host = '${{ steps.sftp_deploy.outputs.host }}';
+            const port = '${{ steps.sftp_deploy.outputs.port }}';
+            const path = '${{ steps.sftp_deploy.outputs.path }}';
+            const files = '${{ steps.count_files.outputs.file_count }}';
+            const duration = '${{ steps.sftp_deploy.outputs.duration }}';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `✅ **Production Deployment Complete**\n\n**Uploaded:** ${files} files\n**Target:** ${host}:${port}${path}\n**Duration:** ${duration}s\n**Completed at:** ${new Date().toISOString()}\n\n**Workflow Run:** https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`
+            });
+
+      - name: Comment on PR with failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ github.event.pull_request.number }};
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `❌ **Production Deployment Failed**\n\nThe deployment failed after PR was merged. Please check the logs and manually redeploy.\n\n**Workflow Run:** https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}\n\n**To retry:**\n1. Go to Actions > Deploy Production\n2. Click "Run workflow"\n3. Leave inputs empty to deploy main branch`
+            });
