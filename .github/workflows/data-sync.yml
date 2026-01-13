@@ -221,12 +221,16 @@ jobs:
               body: body
             });
 
-  # Handle PR merged - just notify, don't auto-merge Website PR
-  # Users must manually merge Website PR or use /deploy command
+  # Handle PR merged - check for deploy label and trigger deployment
   handle-merge:
     runs-on: ubuntu-latest
     needs: log-event
     if: github.event.client_payload.action == 'merged'
+    
+    outputs:
+      has_deploy_label: ${{ steps.check-label.outputs.has_deploy_label }}
+      pr_number: ${{ steps.find-pr.outputs.pr_number }}
+      pr_branch: ${{ steps.find-pr.outputs.pr_branch }}
     
     steps:
       - name: Find corresponding Website PR
@@ -246,16 +250,35 @@ jobs:
             if (prs.length === 0) {
               console.log('No open PR found for branch: ' + targetBranch);
               core.setOutput('pr_number', '');
+              core.setOutput('pr_branch', '');
               return null;
             }
             
             const pr = prs[0];
-            console.log(`Found Website PR #${pr.number}`);
+            console.log(`Found Website PR #${pr.number} on branch ${pr.head.ref}`);
             core.setOutput('pr_number', pr.number);
-            return { number: pr.number };
+            core.setOutput('pr_branch', pr.head.ref);
+            return { number: pr.number, branch: pr.head.ref };
 
-      - name: Notify that source PR was merged
+      - name: Check for deploy label on source PR
+        id: check-label
         if: steps.find-pr.outputs.pr_number
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.DATA_REPO_TOKEN }}
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: '${{ env.DATA_REPO }}'.split('/')[0],
+              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              pull_number: ${{ env.SOURCE_PR }}
+            });
+            
+            const hasDeployLabel = pr.labels.some(label => label.name === 'deploy-on-merge');
+            console.log(`Source PR has deploy-on-merge label: ${hasDeployLabel}`);
+            core.setOutput('has_deploy_label', hasDeployLabel);
+
+      - name: Notify (no deploy label)
+        if: steps.find-pr.outputs.pr_number && steps.check-label.outputs.has_deploy_label != 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.DATA_REPO_TOKEN }}
@@ -267,9 +290,54 @@ jobs:
               owner: '${{ env.DATA_REPO }}'.split('/')[0],
               repo: '${{ env.DATA_REPO }}'.split('/')[1],
               issue_number: sourcePRNumber,
-              body: '✅ **Source PR Merged**\n\nThe data has been updated. The corresponding Website PR is ready for deployment:\n[TVLSI/website#' + websitePRNumber + '](https://github.com/TVLSI/website/pull/' + websitePRNumber + ')\n\n**To deploy:** Use `/deploy` command on the Website PR'
+              body: '✅ **Source PR Merged**\n\nThe data has been updated. The corresponding Website PR is ready:\n[TVLSI/website#' + websitePRNumber + '](https://github.com/TVLSI/website/pull/' + websitePRNumber + ')\n\n> **Note:** No deployment was triggered. Use `/deploy` command on the Website PR to deploy to production.'
             });
 
+      - name: Notify deployment starting (with deploy label)
+        if: steps.find-pr.outputs.pr_number && steps.check-label.outputs.has_deploy_label == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.DATA_REPO_TOKEN }}
+          script: |
+            const websitePRNumber = ${{ steps.find-pr.outputs.pr_number }};
+            const sourcePRNumber = ${{ env.SOURCE_PR }};
+            
+            await github.rest.issues.createComment({
+              owner: '${{ env.DATA_REPO }}'.split('/')[0],
+              repo: '${{ env.DATA_REPO }}'.split('/')[1],
+              issue_number: sourcePRNumber,
+              body: '🚀 **Triggering Production Deployment**\n\nThe source PR had the `deploy-on-merge` label. Starting production deployment...\n\n**Website PR:** [TVLSI/website#' + websitePRNumber + '](https://github.com/TVLSI/website/pull/' + websitePRNumber + ')\n\n> Deployment will build the site with fresh data and deploy via SFTP.\n> The Website PR will be merged automatically after successful deployment.'
+            });
+
+  # Trigger production deployment if source PR had deploy label
+  trigger-deploy:
+    runs-on: ubuntu-latest
+    needs: handle-merge
+    if: needs.handle-merge.outputs.has_deploy_label == 'true' && needs.handle-merge.outputs.pr_number != ''
+    
+    steps:
+      - name: Trigger deploy-production workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log('Dispatching deploy-production event...');
+            console.log('Website PR: #' + '${{ needs.handle-merge.outputs.pr_number }}');
+            console.log('PR Branch: ' + '${{ needs.handle-merge.outputs.pr_branch }}');
+            console.log('Source PR: #' + '${{ env.SOURCE_PR }}');
+            
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'deploy-production',
+              client_payload: {
+                source_pr: ${{ env.SOURCE_PR }},
+                pr_title: ${{ toJson(github.event.client_payload.pr_title) }},
+                sender: '${{ github.event.client_payload.sender }}',
+                website_pr: ${{ needs.handle-merge.outputs.pr_number }},
+                pr_branch: '${{ needs.handle-merge.outputs.pr_branch }}'
+              }
+            });
+            console.log('✓ Dispatched deploy-production event');
 
 
   # Handle PR closed without merge - cleanup
