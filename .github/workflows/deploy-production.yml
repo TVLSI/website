@@ -390,11 +390,15 @@ jobs:
               const websitePR = '${{ inputs.website_pr }}';
               if (!websitePR) return;
               
+              const host = '${{ steps.sftp_deploy.outputs.host }}' || '${{ secrets.SFTP_HOST }}';
+              const port = '${{ steps.sftp_deploy.outputs.port }}' || '${{ secrets.SFTP_PORT }}' || '22';
+              const path = '${{ steps.sftp_deploy.outputs.path }}' || '${{ secrets.SFTP_PATH }}';
+              
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: parseInt(websitePR),
-                body: `❌ **Manual Deployment Retry Failed**\n\n**Workflow Run:** https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}\n\nPlease check the logs for details and try again after fixing the issue.`
+                body: `❌ **Manual Deployment Retry Failed**\n\n**Target:** ${host}:${port}${path}\n\n**What went wrong:**\nThe deployment build or SFTP upload failed. Common causes:\n- SFTP server unavailable or credentials incorrect\n- SFTP permission denied on remote path\n- Build failed due to missing data or template errors\n\n**How to fix:**\n1. Check the error logs below to identify the specific issue\n2. Fix SFTP server/permissions if it's an upload error\n3. Fix data/template issues if it's a build error\n\n**What to do next:**\nOnce you've fixed the issue, retry deployment:\n1. Go to: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/workflows/deploy-production.yml\n2. Click "Run workflow"\n3. Enter Website PR number: **${websitePR}**\n4. Click "Run workflow"\n\nOr merge this PR without deploying:\n1. Remove the \`deploy-on-merge\` label\n2. Merge the PR manually\n\n**Logs:** [View Deployment Logs](https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`
               });
             }
 
