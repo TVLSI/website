@@ -118,31 +118,51 @@ jobs:
           # Run update_eb.py to process member data
           if [ -f scripts/update_eb.py ]; then
             echo "Running update_eb.py..."
-            python scripts/update_eb.py
+            python scripts/update_eb.py || { echo "ERROR: update_eb.py failed"; exit 1; }
             echo "✓ Completed update_eb.py"
+          else
+            echo "ERROR: scripts/update_eb.py not found"
+            exit 1
           fi
           
           # Run create_downloads_file.py to process downloads data
           if [ -f scripts/create_downloads_file.py ]; then
             echo "Running create_downloads_file.py..."
-            python scripts/create_downloads_file.py
+            python scripts/create_downloads_file.py || { echo "ERROR: create_downloads_file.py failed"; exit 1; }
             echo "✓ Completed create_downloads_file.py"
+          else
+            echo "ERROR: scripts/create_downloads_file.py not found"
+            exit 1
           fi
           
           echo "✓ All generation scripts completed"
+          echo ""
+          echo "Generated files:"
+          ls -lh generated-data/*.json || echo "No JSON files found in generated-data/"
 
       - name: Copy generated data to Website
         run: |
+          # Ensure generated-data directory exists and has files
+          if [ ! -d "website-data/generated-data" ]; then
+            echo "::error::website-data/generated-data directory not found!"
+            exit 1
+          fi
+          
           # Copy JSON files
           mkdir -p data
-          cp website-data/generated-data/*.json data/
+          cp website-data/generated-data/*.json data/ || { echo "::error::Failed to copy JSON files"; exit 1; }
           echo "✓ Copied JSON files"
+          
+          echo "Files in data/ directory:"
+          ls -lh data/*.json
           
           # Copy member images
           mkdir -p assets/images/eb
           if [ -d website-data/generated-data/images/eb ]; then
             cp -r website-data/generated-data/images/eb/* assets/images/eb/
             echo "✓ Copied member images"
+          else
+            echo "Warning: No member images found in website-data/generated-data/images/eb"
           fi
 
       - name: Set up Node.js
