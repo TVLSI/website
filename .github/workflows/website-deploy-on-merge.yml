@@ -22,10 +22,15 @@ permissions:
 
 jobs:
   check-and-deploy:
-    # Only run if PR was merged (not just closed) AND has deploy label
+    # Only run if:
+    # 1. PR was merged (not just closed)
+    # 2. Has deploy-on-merge label  
+    # 3. NOT a data sync PR (those are handled by deploy-production.yml via repository_dispatch)
+    # Data sync PRs have branches starting with 'data/'
     if: |
       github.event.pull_request.merged == true &&
-      contains(github.event.pull_request.labels.*.name, 'deploy-on-merge')
+      contains(github.event.pull_request.labels.*.name, 'deploy-on-merge') &&
+      !startsWith(github.event.pull_request.head.ref, 'data/')
     runs-on: ubuntu-latest
     
     steps:
