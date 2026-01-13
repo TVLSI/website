@@ -39,7 +39,7 @@ concurrency:
 env:
   # Users allowed to run commands (GitHub usernames, comma-separated)
   # Add your GitHub username(s) here
-  ALLOWED_USERS: "mfleming7024,dependabot[bot]"
+  ALLOWED_USERS: "mfleming7024,jake1164,dependabot[bot]"
 
 jobs:
   handle-command:
