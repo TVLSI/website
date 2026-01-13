@@ -330,10 +330,15 @@ jobs:
         if: failure()
         uses: actions/github-script@v7
         continue-on-error: true
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
         with:
           github-token: ${{ secrets.DATA_REPO_TOKEN }}
           script: |
             const eventName = '${{ github.event_name }}';
+            const githubRepo = process.env.GITHUB_REPO;
+            const runId = process.env.RUN_ID;
             
             if (eventName === 'repository_dispatch') {
               const sourcePR = ${{ github.event.client_payload.source_pr || 0 }};
@@ -378,7 +383,7 @@ jobs:
                 owner: dataOwner,
                 repo: dataRepo,
                 issue_number: sourcePR,
-                body: `❌ **Production Deployment Failed**\n\n**Target:** ${host}:${port}${path}\n\n⚠️ **Both PRs have been reopened** for investigation.\n\n**To retry after fixing the issue:**\n1. Fix the underlying problem (e.g., SFTP permissions)\n2. Go to: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/workflows/deploy-production.yml\n3. Click "Run workflow"\n4. Enter Website PR number: **${websitePR}**\n5. (Optional) Enter this PR number for comments: **${sourcePR}**\n6. Click "Run workflow"\n\n**Logs:** [View Deployment Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n${websitePR ? `**Website PR:** https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${websitePR}` : ''}`
+                body: `❌ **Production Deployment Failed**\n\n**Target:** ${host}:${port}${path}\n\n⚠️ **Both PRs have been reopened** for investigation.\n\n**To retry after fixing the issue:**\n1. Fix the underlying problem (e.g., SFTP permissions)\n2. Go to: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/workflows/deploy-production.yml\n3. Click "Run workflow"\n4. Enter Website PR number: **${websitePR}**\n5. (Optional) Enter this PR number for comments: **${sourcePR}**\n6. Click "Run workflow"\n\n**Logs:** [View Deployment Logs](https://github.com/${githubRepo}/actions/runs/${runId})\n\n${websitePR ? `**Website PR:** https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${websitePR}` : ''}`
               });
             } else if (eventName === 'workflow_dispatch') {
               // Manual retry failed
