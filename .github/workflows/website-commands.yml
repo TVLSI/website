@@ -351,7 +351,7 @@ jobs:
           ref: ${{ needs.handle-command.outputs.pr_branch }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
