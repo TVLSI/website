@@ -15,6 +15,8 @@ layout: base.njk
     <p>To address this critical area through a common forum, the IEEE Transactions on VLSI Systems have been founded. The editorial board, consisting of international experts, invites original papers which emphasize and merit the novel systems integration aspects of microelectronic systems including interactions among systems design and partitioning, logic and memory design, digital and analog circuit design, layout synthesis, CAD tools, chips and wafer fabrication, testing and packaging, and systems level qualification. Thus, the coverage of these Transactions will focus on VLSI/ULSI microelectronic systems integration.</p>
 
     <p>Submissions relating to analog and mixed-signal circuits and architectures must be consistent with the emphasis area of the Transactions, namely VLSI/ULSI technologies and implementations. While it is not essential to demonstrate large scale integration in the submission, the eventual applicability of the material to VLSI/ULSI systems should be clear, and when possible, highlighted by the authors. Publications demonstrating measurements and experimental verification of designs are encouraged.</p>
+  
+      <a href="{{ site.baseUrl }}/author-information/">Information for Authors (Author Guidelines)</a>
   </div>
 
   <div class="sidebar">
@@ -77,13 +79,6 @@ layout: base.njk
         </a>
       </div>
     {% endif %}
-
-    <div class="sidebar-link">
-      <p>Follow us on LinkedIn</p>
-      <a href="https://www.linkedin.com/company/ieeetvlsi/" target="_blank" rel="noopener">
-        TVLSI LinkedIn Page <span class="fa fa-external-link" aria-hidden="true"></span>
-      </a>
-    </div>
   </div>
 </div>
 
