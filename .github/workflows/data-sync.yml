@@ -81,7 +81,12 @@ jobs:
         id: commit
         run: |
           # Create a marker file that tells build workflows which website-data branch to use
-          echo "TVLSI/website-data@${{ env.DATA_BRANCH }}" > .use-tvlsi-data
+          # Include PR number and timestamp to ensure file changes on each update
+          cat > .use-tvlsi-data << EOF
+          TVLSI/website-data@${{ env.DATA_BRANCH }}
+          PR: #${{ env.SOURCE_PR }}
+          Updated: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          EOF
           echo "✓ Created .use-tvlsi-data pointing to branch: ${{ env.DATA_BRANCH }}"
           
           # Use -f to force add in case .gitignore has this file (it shouldn't, but just in case)
