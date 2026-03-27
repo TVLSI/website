@@ -6,15 +6,17 @@ layout: base.njk
 
 <div class="content-wrapper">
   <div class="main-content">
-    <h1>Scope and Call for Papers</h1>
+
 
     <div class="announcement-title">
       <img src="/images/new.gif" alt="New!" class="announcement-badge">
-      <h3>Call for TVLSI Editor-in-Chief 2027-2028
+      <h1>Call for TVLSI Editor-in-Chief 2027-2028
       <a href="https://ieee-cas.org/form/tvlsi-tafe-eic-nomination-form-t">Click Here</a>
-      </h3>
+      </h1>
     </div>
 
+    <h2>Scope and Call for Papers</h2>
+    
     <p>The IEEE Transactions on VLSI Systems is published as a monthly journal under the co-sponsorship of the IEEE Circuits and Systems Society, the IEEE Computer Society, and the IEEE Solid-State Circuits Society.</p>
 
     <p>Design and realization of microelectronic systems using VLSI/ULSI technologies require close collaboration among scientists and engineers in the fields of systems architecture, logic and circuit design, chips and wafer fabrication, packaging, testing and systems applications. Generation of specifications, design and verification must be performed at all abstraction levels, including the system, register-transfer, logic, circuit, transistor and process levels.</p>
