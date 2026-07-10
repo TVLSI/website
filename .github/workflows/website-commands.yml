@@ -551,7 +551,7 @@ jobs:
             });
 
       - name: Checkout PR branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.handle-command.outputs.pr_branch }}
 
