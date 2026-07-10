@@ -1,18 +1,19 @@
 # Website Commands Handler
 #
-# Handles /preview, /deploy, and /status commands on Website PRs directly.
+# Handles /preview, /deploy, /published, and /status commands on Website PRs directly.
 # This is for website-only changes (no data changes from website-data).
 #
 # Commands:
 #   /preview       - Deploy preview to GitHub Pages
 #   /deploy        - Mark PR for production deployment on merge
 #   /deploy cancel - Remove deploy marker
+#   /published     - Resolve a data-sync PR that was manually published
 #   /status        - Show current status
 #
 # SECURITY: Only allowed users can trigger commands (public repo restriction)
 #
 # Required secrets:
-#   (None - uses GITHUB_TOKEN)
+#   DATA_REPO_TOKEN - PAT with repo access to TVLSI/website-data (for /published source comments)
 
 name: Website Commands
 
@@ -25,7 +26,7 @@ on:
     types: [opened, edited]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
   issues: write
   pages: write
@@ -37,6 +38,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  DATA_REPO: TVLSI/website-data
   # Users allowed to run commands (GitHub usernames, comma-separated)
   # Add your GitHub username(s) here
   ALLOWED_USERS: "mfleming7024,jake1164,dependabot[bot]"
@@ -55,6 +57,7 @@ jobs:
       pr_sha: ${{ steps.pr.outputs.sha }}
       pr_title: ${{ steps.pr.outputs.title }}
       authorized: ${{ steps.auth.outputs.authorized }}
+      sender: ${{ steps.auth.outputs.sender }}
     
     steps:
       - name: Parse command
@@ -73,6 +76,8 @@ jobs:
               command = 'cancel';
             } else if (body.includes('/deploy')) {
               command = 'deploy';
+            } else if (body.includes('/published')) {
+              command = 'published';
             } else if (body.includes('/status')) {
               command = 'status';
             }
@@ -204,6 +209,7 @@ jobs:
             status += `- \`&#47;preview\` - Deploy preview to GitHub Pages\n`;
             status += `- \`&#47;deploy\` - Mark for production deployment\n`;
             status += `- \`&#47;deploy cancel\` - Remove deploy marker\n`;
+            status += `- \`&#47;published\` - Resolve a manually published data-sync PR\n`;
             status += `- \`&#47;status\` - Show this status\n\n`;
             
             status += `**Preview URL:** ${pagesUrl}`;
@@ -319,6 +325,205 @@ jobs:
                 issue_number: prNumber,
                 body: `✅ **Deploy marker removed**\n\nThis PR will no longer be deployed when merged.\n\nUse \`&#47;deploy\` to mark it for deployment again.`
               });
+            }
+
+  # Handle /published command - close manually published data-sync PRs
+  published-command:
+    needs: handle-command
+    if: needs.handle-command.outputs.command == 'published' && needs.handle-command.outputs.authorized == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      source_pr: ${{ steps.resolve.outputs.source_pr }}
+      source_url: ${{ steps.resolve.outputs.source_url }}
+    
+    steps:
+      - name: Resolve linked data PR
+        id: resolve
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const prNumber = ${{ needs.handle-command.outputs.pr_number }};
+            const branch = '${{ needs.handle-command.outputs.pr_branch }}';
+            const [dataOwner, dataRepo] = '${{ env.DATA_REPO }}'.split('/');
+            
+            if (!branch.startsWith('data/')) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: `❌ **Cannot mark as published**\n\n\`/published\` is only for synthetic data-sync PRs whose branch starts with \`data/\`.\n\nThis PR branch is \`${branch}\`.`
+              });
+              core.setFailed('/published can only be used on data-sync PRs');
+              return;
+            }
+            
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100
+            });
+            
+            const text = [
+              pr.body || '',
+              ...comments.map(comment => comment.body || '')
+            ].join('\n');
+            
+            const sourceMatches = [
+              ...text.matchAll(/(?:TVLSI\/website-data(?:#|\/pull\/)|website-data(?:#|\/pull\/))(\d+)/gi)
+            ];
+            const sourcePR = sourceMatches.length > 0
+              ? sourceMatches[sourceMatches.length - 1][1]
+              : '';
+            
+            if (!sourcePR) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: `❌ **Cannot mark as published**\n\nThis data-sync PR does not include a parseable linked \`${{ env.DATA_REPO }}\` PR number.`
+              });
+              core.setFailed('Could not find linked website-data PR');
+              return;
+            }
+            
+            const sourceUrl = `https://github.com/${dataOwner}/${dataRepo}/pull/${sourcePR}`;
+            core.setOutput('source_pr', sourcePR);
+            core.setOutput('source_url', sourceUrl);
+            console.log(`Resolved source PR: ${sourceUrl}`);
+
+      - name: Check source data PR is closed
+        id: source_status
+        if: steps.resolve.outputs.source_pr != ''
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.DATA_REPO_TOKEN }}
+          script: |
+            const [dataOwner, dataRepo] = '${{ env.DATA_REPO }}'.split('/');
+            const sourcePR = parseInt('${{ steps.resolve.outputs.source_pr }}');
+            
+            const { data: pr } = await github.rest.pulls.get({
+              owner: dataOwner,
+              repo: dataRepo,
+              pull_number: sourcePR
+            });
+            
+            const state = pr.state;
+            const merged = pr.merged === true;
+            core.setOutput('state', state);
+            core.setOutput('merged', merged);
+            console.log(`Source PR #${sourcePR}: state=${state}, merged=${merged}`);
+
+      - name: Refuse if source data PR is still open
+        if: steps.source_status.outputs.state == 'open'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const prNumber = ${{ needs.handle-command.outputs.pr_number }};
+            const sourceUrl = '${{ steps.resolve.outputs.source_url }}';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `❌ **Cannot mark as published yet**\n\nThe linked data PR is still open:\n${sourceUrl}\n\nClose or merge the \`${{ env.DATA_REPO }}\` PR first, then run \`/published\` here again.`
+            });
+            
+            core.setFailed('Linked website-data PR is still open');
+
+      - name: Comment on source data PR
+        if: steps.resolve.outputs.source_pr != '' && steps.source_status.outputs.state != 'open'
+        uses: actions/github-script@v9
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.DATA_REPO_TOKEN }}
+          script: |
+            const [dataOwner, dataRepo] = '${{ env.DATA_REPO }}'.split('/');
+            const sourcePR = parseInt('${{ steps.resolve.outputs.source_pr }}');
+            const websitePR = ${{ needs.handle-command.outputs.pr_number }};
+            const actor = '${{ needs.handle-command.outputs.sender }}';
+            
+            await github.rest.issues.createComment({
+              owner: dataOwner,
+              repo: dataRepo,
+              issue_number: sourcePR,
+              body: `✅ **Marked Published Manually**\n\n@${actor} marked the linked Website PR as already published.\n\n**Website PR:** https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${websitePR}\n**Completed at:** ${new Date().toISOString()}\n\nThe Website data-sync PR will be closed and its branch deleted.`
+            });
+
+      - name: Close Website PR and delete branch
+        if: steps.source_status.outputs.state != 'open'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const prNumber = ${{ needs.handle-command.outputs.pr_number }};
+            const branch = '${{ needs.handle-command.outputs.pr_branch }}';
+            const sourceUrl = '${{ steps.resolve.outputs.source_url }}';
+            const actor = '${{ needs.handle-command.outputs.sender }}';
+            const labelName = 'manually-published';
+            
+            try {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                name: 'deploy-on-merge'
+              });
+            } catch (e) {
+              console.log(`deploy-on-merge label was not removed: ${e.message}`);
+            }
+            
+            try {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: labelName,
+                color: '0e8a16',
+                description: 'Data-sync PR resolved because the change was manually published'
+              });
+            } catch (e) {
+              console.log(`Label ${labelName} may already exist: ${e.message}`);
+            }
+            
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                labels: [labelName]
+              });
+            } catch (e) {
+              console.log(`Could not add label ${labelName}: ${e.message}`);
+            }
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `✅ **Published Manually**\n\n@${actor} marked this data-sync PR as already published outside the automation.\n\n**Linked data PR:** ${sourceUrl}\n**Completed at:** ${new Date().toISOString()}\n\nThis PR is being closed and branch \`${branch}\` will be deleted.`
+            });
+            
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              state: 'closed'
+            });
+            
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `heads/${branch}`
+              });
+              console.log(`Deleted branch ${branch}`);
+            } catch (e) {
+              console.log(`Could not delete branch ${branch}: ${e.message}`);
             }
 
   # Handle /preview command - build and deploy to GitHub Pages
