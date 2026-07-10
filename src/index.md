@@ -7,14 +7,6 @@ layout: base.njk
 <div class="content-wrapper">
   <div class="main-content">
 
-
-    <div class="announcement-title">
-      <img src="/images/new.gif" alt="New!" class="announcement-badge">
-      <h1>Call for TVLSI Editor-in-Chief 2027-2028
-      <a href="https://ieee-cas.org/form/tvlsi-tafe-eic-nomination-form-t">Click Here</a>
-      </h1>
-    </div>
-
     <h2>Scope and Call for Papers</h2>
     
     <p>The IEEE Transactions on VLSI Systems is published as a monthly journal under the co-sponsorship of the IEEE Circuits and Systems Society, the IEEE Computer Society, and the IEEE Solid-State Circuits Society.</p>
