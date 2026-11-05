@@ -7,7 +7,7 @@ layout: base.njk
 TVLSI Manuscript Submission Guidelines and Notes
 ================================================
 
-1. All manuscript submissions must be submitted using the TVLSI IEEE Template. Templates must be downloaded from <a href="https://na01.safelinks.protection.outlook.com/?url=https%3A%2F%2Ftemplate-selector.ieee.org%2Fsecure%2FtemplateSelector%2Fformat%3FpublicationTypeId%3D1%26titleId%3D39%26articleId%3D3&data=05%7C02%7C%7C370db685daf24eee9b7c08dd913f1949%7C84df9e7fe9f640afb435aaaaaaaaaaaa%7C1%7C0%7C638826422365461970%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=bEKk%2FvfZWxqqm7uxde6TJHoIo1qgpAP%2F2bv86xiFAXM%3D&reserved=0" target="_blank" rel="noopener">here <span class="fa fa-external-link" aria-hidden="true"></span></a>.  No exceptions.
+1. All manuscript submissions must be submitted using the TVLSI IEEE Template. Templates must be downloaded from <a href="https://template-selector.ieee.org/secure/templateSelector/publication?publicationTypeId=1" target="_blank" rel="noopener">here <span class="fa fa-external-link" aria-hidden="true"></span></a>.  No exceptions.
 
 2. Templates cannot be modified and packages cannot be added.  If anything is modified or added, and a manuscript is accepted for publication, but it exceeds the page guidelines, it will be rejected.  
 
